@@ -73,6 +73,8 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(BasicAuthMiddleware(conn))
 
+	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
+
 	router.With(BasicAuthMiddleware(conn)).Get("/users", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		user, ok := ctx.Value("user").(auth.User)
