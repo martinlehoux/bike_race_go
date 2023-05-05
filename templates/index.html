@@ -1,7 +1,8 @@
 <html>
   {{ template "head.html" . }}
   <body>
-    <h1>Hello world</h1>
+    {{ template "navbar.html" . }}
+    <h1>Hello {{.Username}}</h1>
     <form action="/users/register" method="post">
       <input type="text" name="username" />
       <input type="password" name="password">
