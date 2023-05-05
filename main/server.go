@@ -3,6 +3,7 @@ package main
 import (
 	"bike_race/auth"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,8 +29,8 @@ type UsersTemplateData struct {
 }
 
 func unauthorized(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusUnauthorized)
 	w.Header().Add("WWW-Authenticate", `Basic realm="private"`)
+	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte(err.Error()))
 }
 
@@ -79,7 +80,7 @@ func main() {
 		ctx := r.Context()
 		user, ok := ctx.Value("user").(auth.User)
 		if !ok {
-			unauthorized(w, nil)
+			unauthorized(w, errors.New("not authenticated"))
 			return
 		}
 		templateData := UsersTemplateData{
