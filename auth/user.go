@@ -36,7 +36,7 @@ func (user *User) Save(conn *pgx.Conn, ctx context.Context) error {
 }
 
 func (user *User) SetPassword(oldPassword string, newPassword string) error {
-	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(oldPassword)) != nil {
+	if user.PasswordHash != nil && bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(oldPassword)) != nil {
 		return errors.New("incorrect password")
 	}
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
