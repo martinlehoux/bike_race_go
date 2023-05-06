@@ -12,7 +12,7 @@ import (
 )
 
 func RegisterUser(ctx context.Context, conn *pgx.Conn, username string, password string) (int, error) {
-	user, err := CreateUser(username)
+	user, err := NewUser(username)
 	if err != nil {
 		err = fmt.Errorf("error creating user: %w", err)
 		log.Println(err)

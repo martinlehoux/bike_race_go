@@ -5,23 +5,22 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Id           uuid.UUID
+	Id           core.ID
 	Username     string
 	PasswordHash []byte
 }
 
-func CreateUser(username string) (User, error) {
+func NewUser(username string) (User, error) {
 	var user User
 	if len(username) < 3 {
 		return user, errors.New("username must be at least 3 characters")
 	}
-	user.Id = core.UUID()
+	user.Id = core.NewID()
 	user.Username = username
 	return user, nil
 }

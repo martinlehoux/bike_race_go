@@ -76,7 +76,7 @@ func main() {
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
-	router.With(BasicAuthMiddleware(conn)).Get("/users", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/users", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		user, ok := ctx.Value("user").(auth.User)
 		if !ok {
@@ -88,19 +88,22 @@ func main() {
 		}
 		rows, err := conn.Query(ctx, `SELECT username FROM users`)
 		if err != nil {
-			log.Printf("error querying users: %v", err)
+			err = fmt.Errorf("error querying users: %w", err)
+			log.Fatal(err)
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var user struct{ Username string }
 			err := rows.Scan(&user.Username)
 			if err != nil {
-				log.Printf("error scanning users: %v", err)
+				err = fmt.Errorf("error scanning users: %w", err)
+				log.Fatal(err)
 			}
 			templateData.Users = append(templateData.Users, user)
 		}
 		err = tpl.ExecuteTemplate(w, "users.html", templateData)
 		if err != nil {
+			err = fmt.Errorf("error executing template: %w", err)
 			log.Fatal(err)
 		}
 	})
