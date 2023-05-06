@@ -40,30 +40,6 @@ type RacesTemplateData struct {
 	Races []RacesTemplateDataRow
 }
 
-func unauthorized(w http.ResponseWriter, err error) {
-	w.Header().Add("WWW-Authenticate", `Basic realm="private"`)
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(err.Error()))
-}
-
-func BasicAuthMiddleware(conn *pgx.Conn) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			username, password, ok := r.BasicAuth()
-			if ok {
-				user, err := auth.Authenticate(ctx, conn, username, password)
-				if err != nil {
-					unauthorized(w, err)
-					return
-				}
-				ctx = context.WithValue(ctx, "user", user)
-			}
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
-}
-
 func main() {
 	ctx := context.Background()
 	err := godotenv.Load()
@@ -84,7 +60,7 @@ func main() {
 	}
 
 	router.Use(middleware.Logger)
-	router.Use(BasicAuthMiddleware(conn))
+	router.Use(auth.BasicAuthMiddleware(conn))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
@@ -92,7 +68,7 @@ func main() {
 		ctx := r.Context()
 		user, ok := ctx.Value("user").(auth.User)
 		if !ok {
-			unauthorized(w, errors.New("not authenticated"))
+			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
 		templateData := UsersTemplateData{
@@ -143,7 +119,7 @@ func main() {
 		ctx := r.Context()
 		_, ok := ctx.Value("user").(auth.User)
 		if !ok {
-			unauthorized(w, errors.New("not authenticated"))
+			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
 		templateData := RacesTemplateData{}
@@ -179,7 +155,7 @@ func main() {
 		ctx := r.Context()
 		user, ok := ctx.Value("user").(auth.User)
 		if !ok {
-			unauthorized(w, errors.New("not authenticated"))
+			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
 		code, err := race.OrganizeRace(ctx, conn, r.FormValue("name"), user)
