@@ -4,7 +4,6 @@ import (
 	"bike_race/auth"
 	"bike_race/core"
 	"errors"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -70,6 +69,35 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			w.Write([]byte(err.Error()))
 		} else {
 			http.Redirect(w, r, "/races", http.StatusSeeOther)
+		}
+	})
+
+	router.Get("/{raceId}", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		var raceName string
+		err = conn.QueryRow(ctx, `
+		SELECT races.name FROM races WHERE races.id = $1
+		`, raceId).Scan(&raceName)
+		if err != nil {
+			err = core.Wrap(err, "error querying race")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		templateData := struct{ RaceName string }{RaceName: raceName}
+		err = tpl.ExecuteTemplate(w, "race.html", templateData)
+		if err != nil {
+			err = core.Wrap(err, "error executing template")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 	})
 
