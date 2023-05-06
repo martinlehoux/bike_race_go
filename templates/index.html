@@ -1,12 +1,20 @@
 <html>
-  {{ template "head.html" . }}
-  <body>
-    {{ template "navbar.html" . }}
-    <h1>Hello {{.Username}}</h1>
-    <form action="/users/register" method="post">
+{{ template "head.html" . }}
+
+<body>
+  {{ template "navbar.html" . }}
+  {{ if .Username }}
+  <p>Hello {{.Username}}</p>
+  {{ else }}
+  <form action="/users/register" method="post">
+    <fieldset>
+      <legend>Register</legend>
       <input type="text" name="username" />
       <input type="password" name="password">
       <input type="submit" value="Register" />
-    </form>
-  </body>
+    </fieldset>
+  </form>
+  {{ end }}
+</body>
+
 </html>
