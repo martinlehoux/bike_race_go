@@ -2,6 +2,8 @@ package main
 
 import (
 	"bike_race/auth"
+	"bike_race/core"
+	"bike_race/race"
 	"context"
 	"errors"
 	"fmt"
@@ -26,6 +28,16 @@ type UsersTemplateData struct {
 	Users    []struct {
 		Username string
 	}
+}
+
+type RacesTemplateDataRow struct {
+	RaceId     core.ID
+	RaceName   string
+	Organizers string
+}
+
+type RacesTemplateData struct {
+	Races []RacesTemplateDataRow
 }
 
 func unauthorized(w http.ResponseWriter, err error) {
@@ -124,6 +136,58 @@ func main() {
 			w.Write([]byte(err.Error()))
 		} else {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	})
+
+	router.Get("/races", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, ok := ctx.Value("user").(auth.User)
+		if !ok {
+			unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+		templateData := RacesTemplateData{}
+		rows, err := conn.Query(ctx, `
+		SELECT races.id, races.name, string_agg(users.username, ', ')
+		FROM races
+		LEFT JOIN race_organizers ON races.id = race_organizers.race_id
+		LEFT JOIN users ON race_organizers.user_id = users.id
+		GROUP BY races.id, races.name
+		`)
+		if err != nil {
+			err = fmt.Errorf("error querying races: %w", err)
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var row RacesTemplateDataRow
+			err := rows.Scan(&row.RaceId, &row.RaceName, &row.Organizers)
+			if err != nil {
+				err = fmt.Errorf("error scanning races: %w", err)
+				log.Fatal(err)
+			}
+			templateData.Races = append(templateData.Races, row)
+		}
+		err = tpl.ExecuteTemplate(w, "races.html", templateData)
+		if err != nil {
+			err = fmt.Errorf("error executing template: %w", err)
+			log.Fatal(err)
+		}
+	})
+
+	router.Post("/races/organize", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user, ok := ctx.Value("user").(auth.User)
+		if !ok {
+			unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+		code, err := race.OrganizeRace(ctx, conn, r.FormValue("name"), user)
+		if err != nil {
+			w.WriteHeader(code)
+			w.Write([]byte(err.Error()))
+		} else {
+			http.Redirect(w, r, "/races", http.StatusSeeOther)
 		}
 	})
 

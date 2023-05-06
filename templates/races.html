@@ -1,0 +1,34 @@
+{{ template "head.html" . }}
+<html>
+
+<body>
+  {{ template "navbar.html" }}
+  <h1>All races</h1>
+  <form action="/races/organize" method="post">
+    <fieldset>
+      <legend>Organize race</legend>
+      <input type="text" name="name" />
+      <input type="submit" value="Organize">
+    </fieldset>
+  </form>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Organizers</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Races}}
+      <tr>
+        <td>
+          <a href="/races/{{.RaceId.String}}">{{.RaceName}}</a>
+        </td>
+        <td>{{.Organizers}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</body>
+
+</html>

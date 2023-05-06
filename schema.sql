@@ -14,6 +14,26 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: race_organizers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.race_organizers (
+    race_id uuid NOT NULL,
+    user_id uuid NOT NULL
+);
+
+
+--
+-- Name: races; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.races (
+    id uuid NOT NULL,
+    name character varying(255) NOT NULL
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -31,6 +51,30 @@ CREATE TABLE public.users (
     username character varying(255) NOT NULL,
     password_hash bytea NOT NULL
 );
+
+
+--
+-- Name: race_organizers race_organizers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_organizers
+    ADD CONSTRAINT race_organizers_pkey PRIMARY KEY (race_id, user_id);
+
+
+--
+-- Name: races races_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.races
+    ADD CONSTRAINT races_name_key UNIQUE (name);
+
+
+--
+-- Name: races races_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.races
+    ADD CONSTRAINT races_pkey PRIMARY KEY (id);
 
 
 --
@@ -58,6 +102,22 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: race_organizers race_organizers_race_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_organizers
+    ADD CONSTRAINT race_organizers_race_id_fkey FOREIGN KEY (race_id) REFERENCES public.races(id);
+
+
+--
+-- Name: race_organizers race_organizers_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_organizers
+    ADD CONSTRAINT race_organizers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -67,4 +127,5 @@ ALTER TABLE ONLY public.users
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20230504203320');
+    ('20230504203320'),
+    ('20230505202311');
