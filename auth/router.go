@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"bike_race/core"
 	"errors"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -33,7 +33,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		}
 		rows, err := conn.Query(ctx, `SELECT username FROM users`)
 		if err != nil {
-			err = fmt.Errorf("error querying users: %w", err)
+			err = core.Wrap(err, "error querying users")
 			log.Fatal(err)
 		}
 		defer rows.Close()
@@ -41,14 +41,14 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			var user struct{ Username string }
 			err := rows.Scan(&user.Username)
 			if err != nil {
-				err = fmt.Errorf("error scanning users: %w", err)
+				err = core.Wrap(err, "error scanning users")
 				log.Fatal(err)
 			}
 			templateData.Users = append(templateData.Users, user)
 		}
 		err = tpl.ExecuteTemplate(w, "users.html", templateData)
 		if err != nil {
-			err = fmt.Errorf("error executing template: %w", err)
+			err = core.Wrap(err, "error executing template")
 			log.Fatal(err)
 		}
 	})

@@ -2,8 +2,8 @@ package race
 
 import (
 	"bike_race/auth"
+	"bike_race/core"
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -13,19 +13,19 @@ import (
 func OrganizeRace(ctx context.Context, conn *pgx.Conn, name string, user auth.User) (int, error) {
 	race, err := NewRace(name)
 	if err != nil {
-		err = fmt.Errorf("error creating race: %w", err)
+		err = core.Wrap(err, "error creating race")
 		log.Println(err)
 		return http.StatusBadRequest, err
 	}
 	err = race.AddOrganizer(user)
 	if err != nil {
-		err = fmt.Errorf("error adding organizer: %w", err)
+		err = core.Wrap(err, "error adding organizer")
 		log.Println(err)
 		return http.StatusBadRequest, err
 	}
 	err = race.Save(conn, ctx)
 	if err != nil {
-		err = fmt.Errorf("error save race: %w", err)
+		err = core.Wrap(err, "error save race")
 		log.Println(err)
 		return http.StatusInternalServerError, err
 	}

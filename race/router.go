@@ -28,11 +28,6 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, ok := ctx.Value("user").(auth.User)
-		if !ok {
-			auth.Unauthorized(w, errors.New("not authenticated"))
-			return
-		}
 		templateData := RacesTemplateData{}
 		rows, err := conn.Query(ctx, `
 		SELECT races.id, races.name, string_agg(users.username, ', ')
@@ -42,7 +37,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		GROUP BY races.id, races.name
 		`)
 		if err != nil {
-			err = fmt.Errorf("error querying races: %w", err)
+			err = core.Wrap(err, "error querying races")
 			log.Fatal(err)
 		}
 		defer rows.Close()
@@ -50,14 +45,14 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			var row RacesTemplateDataRow
 			err := rows.Scan(&row.RaceId, &row.RaceName, &row.Organizers)
 			if err != nil {
-				err = fmt.Errorf("error scanning races: %w", err)
+				err = core.Wrap(err, "error scanning races")
 				log.Fatal(err)
 			}
 			templateData.Races = append(templateData.Races, row)
 		}
 		err = tpl.ExecuteTemplate(w, "races.html", templateData)
 		if err != nil {
-			err = fmt.Errorf("error executing template: %w", err)
+			err = core.Wrap(err, "error executing template")
 			log.Fatal(err)
 		}
 	})

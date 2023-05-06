@@ -1,9 +1,9 @@
 package auth
 
 import (
+	"bike_race/core"
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -14,19 +14,19 @@ import (
 func RegisterUser(ctx context.Context, conn *pgx.Conn, username string, password string) (int, error) {
 	user, err := NewUser(username)
 	if err != nil {
-		err = fmt.Errorf("error creating user: %w", err)
+		err = core.Wrap(err, "error creating user")
 		log.Println(err)
 		return http.StatusBadRequest, err
 	}
 	err = user.SetPassword("", password)
 	if err != nil {
-		err = fmt.Errorf("error setting password: %w", err)
+		err = core.Wrap(err, "error setting password")
 		log.Println(err)
 		return http.StatusBadRequest, err
 	}
 	err = user.Save(conn, ctx)
 	if err != nil {
-		err = fmt.Errorf("error saving user: %w", err)
+		err = core.Wrap(err, "error saving user")
 		log.Println(err)
 		return http.StatusInternalServerError, err
 	}
@@ -45,7 +45,7 @@ func Authenticate(ctx context.Context, conn *pgx.Conn, username string, password
 		log.Println(err)
 		return User{}, err
 	} else if err != nil {
-		err = fmt.Errorf("error querying user: %w", err)
+		err = core.Wrap(err, "error querying user")
 		log.Println(err)
 		return User{}, err
 	}
@@ -55,7 +55,7 @@ func Authenticate(ctx context.Context, conn *pgx.Conn, username string, password
 		log.Println(err)
 		return User{}, err
 	} else if err != nil {
-		err = fmt.Errorf("error comparing password hash: %w", err)
+		err = core.Wrap(err, "error comparing password hash")
 		log.Println(err)
 		return User{}, err
 	}

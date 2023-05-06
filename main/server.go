@@ -2,9 +2,9 @@ package main
 
 import (
 	"bike_race/auth"
+	"bike_race/core"
 	"bike_race/race"
 	"context"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -24,7 +24,7 @@ func main() {
 	ctx := context.Background()
 	err := godotenv.Load()
 	if err != nil {
-		err = fmt.Errorf("error loading .env file: %w", err)
+		err = core.Wrap(err, "error loading .env file")
 		log.Fatal(err)
 	}
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))

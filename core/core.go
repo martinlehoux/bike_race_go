@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/base64"
-	"fmt"
 	"log"
 
 	"github.com/gofrs/uuid"
@@ -27,11 +26,11 @@ func (id ID) String() string {
 func ParseID(value string) (ID, error) {
 	bytes, err := base64.URLEncoding.DecodeString(value)
 	if err != nil {
-		return ID{}, fmt.Errorf("error decoding value: %w", err)
+		return ID{}, Wrap(err, "error decoding value")
 	}
 	id, err := uuid.FromBytes(bytes)
 	if err != nil {
-		return ID{}, fmt.Errorf("error parsing uuid: %w", err)
+		return ID{}, Wrap(err, "error parsing uuid")
 	}
 	return ID{id}, nil
 }

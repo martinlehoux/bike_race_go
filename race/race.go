@@ -5,7 +5,6 @@ import (
 	"bike_race/core"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -30,7 +29,7 @@ func NewRace(name string) (Race, error) {
 func (race *Race) Save(conn *pgx.Conn, ctx context.Context) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("error beginning transaction: %w", err)
+		return core.Wrap(err, "error beginning transaction")
 	}
 	_, err = tx.Exec(ctx, `
 	INSERT INTO races (id, name)
@@ -38,7 +37,7 @@ func (race *Race) Save(conn *pgx.Conn, ctx context.Context) error {
 	ON CONFLICT (id) DO UPDATE SET name = $2
 	`, race.Id, race.Name)
 	if err != nil {
-		return fmt.Errorf("error upserting race table: %w", err)
+		return core.Wrap(err, "error userting race table")
 	}
 	for _, organizer := range race.Organizers {
 		_, err = tx.Exec(ctx, `
@@ -47,7 +46,7 @@ func (race *Race) Save(conn *pgx.Conn, ctx context.Context) error {
 		ON CONFLICT (race_id, user_id) DO NOTHING
 		`, race.Id, organizer.Id)
 		if err != nil {
-			return fmt.Errorf("error upserting race_organizers table: %w", err)
+			return core.Wrap(err, "error upserting race_organizers table")
 		}
 	}
 	return tx.Commit(ctx)
