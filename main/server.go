@@ -19,7 +19,7 @@ import (
 )
 
 type IndexTemplateData struct {
-	Username string
+	LoggedInUser auth.User
 }
 
 func main() {
@@ -51,13 +51,14 @@ func main() {
 	}
 
 	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
 	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		user, _ := r.Context().Value("user").(auth.User)
-		err := tpl.ExecuteTemplate(w, "index.html", IndexTemplateData{Username: user.Username})
+		loggedInUser, _ := auth.UserFromContext(r.Context())
+		err := tpl.ExecuteTemplate(w, "index.html", IndexTemplateData{LoggedInUser: loggedInUser})
 		if err != nil {
 			log.Fatal(err)
 		}

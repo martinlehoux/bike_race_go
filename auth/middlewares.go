@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type userContext struct{}
+
 func Unauthorized(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte(err.Error()))
@@ -60,8 +62,13 @@ func CookieAuthMiddleware(conn *pgx.Conn, secret []byte) func(http.Handler) http
 				err = core.Wrap(err, "error loading user")
 				log.Fatal(err)
 			}
-			ctx = context.WithValue(ctx, "user", user)
+			ctx = context.WithValue(ctx, userContext{}, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func UserFromContext(ctx context.Context) (User, bool) {
+	user, ok := ctx.Value(userContext{}).(User)
+	return user, ok
 }

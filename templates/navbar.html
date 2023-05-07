@@ -1,7 +1,9 @@
 <nav>
   <div>
     <a href="/">Home</a>
-    <a href="/users">Users</a>
     <a href="/races">Races</a>
+    {{if .LoggedInUser.Username }}
+    <a href="/users">Users</a>
+    {{end}}
   </div>
 </nav>

@@ -3,8 +3,8 @@
 
 <body>
   {{ template "navbar.html" . }}
-  {{ if .Username }}
-  <p>Hello {{.Username}}</p>
+  {{ if .LoggedInUser.Username }}
+  <p>Hello {{.LoggedInUser.Username}}</p>
   <form action="/users/log_out" method="post">
     <input type="submit" value="Log Out" />
   </form>

@@ -14,8 +14,8 @@ import (
 )
 
 type UsersTemplateData struct {
-	Username string
-	Users    []struct {
+	LoggedInUser User
+	Users        []struct {
 		Username string
 	}
 }
@@ -25,13 +25,13 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		user, ok := ctx.Value("user").(User)
+		loggedInUser, ok := UserFromContext(ctx)
 		if !ok {
 			Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
 		templateData := UsersTemplateData{
-			Username: user.Username,
+			LoggedInUser: loggedInUser,
 		}
 		rows, err := conn.Query(ctx, `SELECT username FROM users`)
 		if err != nil {
@@ -91,7 +91,7 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 
 	router.Post("/log_out", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, ok := ctx.Value("user").(User)
+		_, ok := UserFromContext(ctx)
 		if !ok {
 			Unauthorized(w, errors.New("not authenticated"))
 			return

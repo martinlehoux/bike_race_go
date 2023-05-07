@@ -19,7 +19,8 @@ type RacesTemplateDataRow struct {
 }
 
 type RacesTemplateData struct {
-	Races []RacesTemplateDataRow
+	LoggedInUser auth.User
+	Races        []RacesTemplateDataRow
 }
 
 func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
@@ -27,7 +28,10 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		templateData := RacesTemplateData{}
+		loggedInUser, _ := auth.UserFromContext(ctx)
+		templateData := RacesTemplateData{
+			LoggedInUser: loggedInUser,
+		}
 		rows, err := conn.Query(ctx, `
 		SELECT races.id, races.name, string_agg(users.username, ', ')
 		FROM races
@@ -58,12 +62,12 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 
 	router.Post("/organize", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		user, ok := ctx.Value("user").(auth.User)
+		loggedInUser, ok := auth.UserFromContext(ctx)
 		if !ok {
 			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
-		code, err := OrganizeRace(ctx, conn, r.FormValue("name"), user)
+		code, err := OrganizeRace(ctx, conn, r.FormValue("name"), loggedInUser)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error()))
