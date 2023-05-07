@@ -3,9 +3,11 @@ package auth
 import (
 	"bike_race/core"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -18,7 +20,7 @@ type UsersTemplateData struct {
 	}
 }
 
-func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
+func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Router {
 	router := chi.NewRouter()
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +62,30 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error()))
 		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	})
+
+	router.Post("/log_in", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user, err := AuthenticateUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+		} else {
+			expiresAt := time.Now().Add(24 * time.Hour)
+			cookieValue, err := encrypt(cookiesSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
+			if err != nil {
+				err = core.Wrap(err, "error encrypting cookie")
+				log.Fatal(err)
+			}
+			cookie := http.Cookie{
+				Name:    "authentication",
+				Value:   cookieValue,
+				Expires: expiresAt,
+				Path:    "/",
+			}
+			http.SetCookie(w, &cookie)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	})

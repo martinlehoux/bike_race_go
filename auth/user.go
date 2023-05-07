@@ -25,6 +25,21 @@ func NewUser(username string) (User, error) {
 	return user, nil
 }
 
+func LoadUser(conn *pgx.Conn, ctx context.Context, userId core.ID) (User, error) {
+	var user User
+	err := conn.QueryRow(ctx, `
+		SELECT id, username, password_hash
+		FROM users
+		WHERE id = $1
+	`, userId).Scan(&user.Id, &user.Username, &user.PasswordHash)
+	if err == pgx.ErrNoRows {
+		return User{}, errors.New("user not found")
+	} else if err != nil {
+		return User{}, core.Wrap(err, "error querying user")
+	}
+	return user, nil
+}
+
 func (user *User) Save(conn *pgx.Conn, ctx context.Context) error {
 	_, err := conn.Exec(ctx, `
 		INSERT INTO users (id, username, password_hash)

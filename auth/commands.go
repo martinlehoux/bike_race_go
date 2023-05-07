@@ -33,7 +33,7 @@ func RegisterUser(ctx context.Context, conn *pgx.Conn, username string, password
 	return http.StatusCreated, nil
 }
 
-func Authenticate(ctx context.Context, conn *pgx.Conn, username string, password string) (User, error) {
+func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, error) {
 	var user User
 	err := conn.QueryRow(ctx, `
 		SELECT id, username, password_hash

@@ -5,6 +5,8 @@ import (
 	"bike_race/core"
 	"bike_race/race"
 	"context"
+	"encoding/hex"
+	"errors"
 	"html/template"
 	"log"
 	"net/http"
@@ -27,6 +29,15 @@ func main() {
 		err = core.Wrap(err, "error loading .env file")
 		log.Fatal(err)
 	}
+	cookiesSecret, err := hex.DecodeString(os.Getenv("COOKIE_SECRET"))
+	if err != nil {
+		err = core.Wrap(err, "error decoding cookie secret")
+		log.Fatal(err)
+	}
+	if len(cookiesSecret) != 32 {
+		err = errors.New("cookie secret must be 32 bytes")
+		log.Fatal(err)
+	}
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
@@ -40,7 +51,7 @@ func main() {
 	}
 
 	router.Use(middleware.Logger)
-	router.Use(auth.BasicAuthMiddleware(conn))
+	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
@@ -52,7 +63,7 @@ func main() {
 		}
 	})
 
-	router.Mount("/users", auth.Router(conn, tpl))
+	router.Mount("/users", auth.Router(conn, tpl, cookiesSecret))
 	router.Mount("/races", race.Router(conn, tpl))
 
 	http.ListenAndServe(":3000", router)
