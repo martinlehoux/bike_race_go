@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -15,6 +16,7 @@ import (
 type RacesTemplateDataRow struct {
 	RaceId     core.ID
 	RaceName   string
+	StartAt    time.Time
 	Organizers string
 }
 
@@ -33,7 +35,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			LoggedInUser: loggedInUser,
 		}
 		rows, err := conn.Query(ctx, `
-		SELECT races.id, races.name, string_agg(users.username, ', ')
+		SELECT races.id, races.name, races.start_at, string_agg(users.username, ', ')
 		FROM races
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id
 		LEFT JOIN users ON race_organizers.user_id = users.id
@@ -46,7 +48,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		defer rows.Close()
 		for rows.Next() {
 			var row RacesTemplateDataRow
-			err := rows.Scan(&row.RaceId, &row.RaceName, &row.Organizers)
+			err := rows.Scan(&row.RaceId, &row.RaceName, &row.StartAt, &row.Organizers)
 			if err != nil {
 				err = core.Wrap(err, "error scanning races")
 				log.Fatal(err)

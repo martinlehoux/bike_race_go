@@ -29,7 +29,9 @@ CREATE TABLE public.race_organizers (
 
 CREATE TABLE public.races (
     id uuid NOT NULL,
-    name character varying(255) NOT NULL
+    name character varying(255) NOT NULL,
+    start_at timestamp with time zone NOT NULL,
+    is_open_for_registration boolean NOT NULL
 );
 
 
@@ -128,4 +130,5 @@ ALTER TABLE ONLY public.race_organizers
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20230504203320'),
-    ('20230505202311');
+    ('20230505202311'),
+    ('20230507193814');
