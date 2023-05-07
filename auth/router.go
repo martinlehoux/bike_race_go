@@ -79,15 +79,30 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 				err = core.Wrap(err, "error encrypting cookie")
 				log.Fatal(err)
 			}
-			cookie := http.Cookie{
+			http.SetCookie(w, &http.Cookie{
 				Name:    "authentication",
 				Value:   cookieValue,
 				Expires: expiresAt,
 				Path:    "/",
-			}
-			http.SetCookie(w, &cookie)
+			})
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
+	})
+
+	router.Post("/log_out", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, ok := ctx.Value("user").(User)
+		if !ok {
+			Unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "authentication",
+			Value:   "",
+			Expires: time.Unix(0, 0),
+			Path:    "/",
+		})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
 	return router
