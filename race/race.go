@@ -30,6 +30,30 @@ func NewRace(name string) (Race, error) {
 	}, nil
 }
 
+func LoadRace(conn *pgx.Conn, ctx context.Context, raceId core.ID) (Race, error) {
+	var race Race
+	var organizers []core.ID
+	err := conn.QueryRow(ctx, `
+	SELECT races.id, races.name, races.start_at, races.is_open_for_registration,
+	array_agg(race_organizers.user_id) as user_ids
+	FROM races
+	LEFT JOIN race_organizers ON races.id = race_organizers.race_id
+	WHERE races.id = $1
+	GROUP BY races.id, races.name, races.start_at, races.is_open_for_registration
+	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &organizers)
+	if err != nil {
+		return Race{}, core.Wrap(err, "error selecting races table")
+	}
+	for _, organizerId := range organizers {
+		user, err := auth.LoadUser(conn, ctx, organizerId)
+		if err != nil {
+			return Race{}, core.Wrap(err, "error loading user")
+		}
+		race.Organizers = append(race.Organizers, user)
+	}
+	return race, nil
+}
+
 func (race *Race) Save(conn *pgx.Conn, ctx context.Context) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {

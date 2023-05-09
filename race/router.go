@@ -4,6 +4,7 @@ import (
 	"bike_race/auth"
 	"bike_race/core"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -25,8 +26,22 @@ type RacesTemplateData struct {
 	Races        []RacesTemplateDataRow
 }
 
+type RaceTemplateData struct {
+	LoggedInUser          auth.User
+	RaceId                core.ID
+	Name                  string
+	IsOpenForRegistration bool
+	StartAt               time.Time
+	IsEditable            bool
+}
+
 func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 	router := chi.NewRouter()
+	paris, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		err = core.Wrap(err, "error loading location")
+		log.Fatal(err)
+	}
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -87,17 +102,24 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		var raceName string
+		loggedInUser, _ := auth.UserFromContext(ctx)
+		templateData := RaceTemplateData{
+			LoggedInUser: loggedInUser,
+		}
 		err = conn.QueryRow(ctx, `
-		SELECT races.name FROM races WHERE races.id = $1
-		`, raceId).Scan(&raceName)
+		SELECT races.id, races.name, $2::UUID IS NOT NULL AND bool_or(race_organizers.user_id = $2) AS is_editable, races.is_open_for_registration, races.start_at
+		FROM races
+		LEFT JOIN race_organizers ON races.id = race_organizers.race_id 
+		WHERE races.id = $1
+		GROUP BY races.id, races.name
+		`, raceId, loggedInUser.Id).Scan(&templateData.RaceId, &templateData.Name, &templateData.IsEditable, &templateData.IsOpenForRegistration, &templateData.StartAt)
 		if err != nil {
 			err = core.Wrap(err, "error querying race")
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
-		templateData := struct{ RaceName string }{RaceName: raceName}
 		err = tpl.ExecuteTemplate(w, "race.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
@@ -105,6 +127,49 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			w.Write([]byte(err.Error()))
 			return
 		}
+	})
+
+	router.Post("/{raceId}", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		race, err := LoadRace(conn, ctx, raceId)
+		if err != nil {
+			err = core.Wrap(err, "error loading race")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		loggedInUser, ok := auth.UserFromContext(ctx)
+		if !ok {
+			auth.Unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+		if org := core.Find(race.Organizers, func(user auth.User) bool { return user.Id == loggedInUser.Id }); org == nil {
+			auth.Unauthorized(w, errors.New("not an organizer"))
+			return
+		}
+		race.IsOpenForRegistration = r.FormValue("is_open_for_registration") == "on"
+		race.StartAt, err = time.ParseInLocation("2006-01-02T15:04", r.FormValue("start_at"), paris)
+		if err != nil {
+			err = core.Wrap(err, "error parsing start_at")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		err = race.Save(conn, ctx)
+		if err != nil {
+			err = core.Wrap(err, "error save race")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		http.Redirect(w, r, fmt.Sprintf("/races/%s", race.Id.String()), http.StatusSeeOther)
 	})
 
 	return router
