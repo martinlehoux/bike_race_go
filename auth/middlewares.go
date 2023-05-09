@@ -17,7 +17,9 @@ type userContext struct{}
 
 func Unauthorized(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(err.Error()))
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
 }
 
 func CookieAuthMiddleware(conn *pgx.Conn, secret []byte) func(http.Handler) http.Handler {
