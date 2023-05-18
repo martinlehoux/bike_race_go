@@ -40,7 +40,7 @@ CREATE TABLE public.races (
 --
 
 CREATE TABLE public.schema_migrations (
-    version character varying(255) NOT NULL
+    version character varying(128) NOT NULL
 );
 
 

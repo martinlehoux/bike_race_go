@@ -8,21 +8,39 @@ dbmate up
 air
 ```
 
+## Secrets
+
+- DATABASE_URL
+- COOKIE_SECRET: `head -c32 </dev/urandom | xxd -p -u`
+
 ## Images
 
 - https://pkg.go.dev/image
 - https://go.dev/blog/image
 - https://go.dev/blog/image-draw
 
+## Logging
+
+- https://betterstack.com/community/guides/logging/logging-in-go/
+
 ## TODO
 
-- not log.Fatal, HTTP 500 (middleware?), setting to display or not http 500, recover
+- , HTTP 500 (middleware?), setting to display or not http 500, recover
 - pgx recover
 - fix trailing /
 - export queries
 - error page / error message
 - CSRF
-- structured logger, better log middleware, https://github.com/go-chi/httplog
-- 404 with NotFound
+- 404 with NotFound, 400 with message ?
 - let's start styling
+  - https://github.com/da-revo/go-templating-with-tailwindcss
 - handle time zones
+- tracing
+- linting to remove old patterns
+  - not log.Fatal
+  - not log.\*
+  - https://life.wongnai.com/writing-a-custom-go-vet-for-better-code-standard-7dc8296b5513
+- i18n & templates
+  - https://github.com/kataras/i18n
+  - https://github.com/vorlif/spreak
+- go vet ./... (CI)

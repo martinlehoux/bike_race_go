@@ -9,25 +9,27 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/exp/slog"
 )
 
 func RegisterUser(ctx context.Context, conn *pgx.Conn, username string, password string) (int, error) {
 	user, err := NewUser(username)
 	if err != nil {
 		err = core.Wrap(err, "error creating user")
-		log.Println(err)
+		slog.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
+	logger := slog.With(slog.String("userId", user.Id.String()))
 	err = user.SetPassword("", password)
 	if err != nil {
 		err = core.Wrap(err, "error setting password")
-		log.Println(err)
+		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = user.Save(conn, ctx)
 	if err != nil {
 		err = core.Wrap(err, "error saving user")
-		log.Println(err)
+		logger.Error(err.Error())
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusCreated, nil
