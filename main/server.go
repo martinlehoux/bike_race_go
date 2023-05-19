@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 
@@ -92,7 +91,8 @@ func main() {
 		loggedInUser, _ := auth.UserFromContext(r.Context())
 		err := tpl.ExecuteTemplate(w, "index.html", IndexTemplateData{LoggedInUser: loggedInUser})
 		if err != nil {
-			log.Fatal(err)
+			err = core.Wrap(err, "error executing template")
+			panic(err)
 		}
 	})
 

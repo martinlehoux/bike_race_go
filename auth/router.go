@@ -5,19 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/exp/slog"
 )
 
 type UsersTemplateData struct {
 	LoggedInUser User
-	Users        []struct {
-		Username string
-	}
+	Users        []UserListModel
 }
 
 func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Router {
@@ -32,26 +30,14 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 		}
 		templateData := UsersTemplateData{
 			LoggedInUser: loggedInUser,
+			Users:        UserListQuery(ctx, conn),
 		}
-		rows, err := conn.Query(ctx, `SELECT username FROM users`)
-		if err != nil {
-			err = core.Wrap(err, "error querying users")
-			log.Fatal(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var user struct{ Username string }
-			err := rows.Scan(&user.Username)
-			if err != nil {
-				err = core.Wrap(err, "error scanning users")
-				log.Fatal(err)
-			}
-			templateData.Users = append(templateData.Users, user)
-		}
-		err = tpl.ExecuteTemplate(w, "users.html", templateData)
+		err := tpl.ExecuteTemplate(w, "users.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
-			log.Fatal(err)
+			slog.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
@@ -70,15 +56,11 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 		ctx := r.Context()
 		user, err := AuthenticateUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		} else {
 			expiresAt := time.Now().Add(24 * time.Hour)
-			cookieValue, err := encrypt(cookiesSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
-			if err != nil {
-				err = core.Wrap(err, "error encrypting cookie")
-				log.Fatal(err)
-			}
+			cookieValue := encrypt(cookiesSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
 			http.SetCookie(w, &http.Cookie{
 				Name:    "authentication",
 				Value:   cookieValue,

@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/base64"
-	"log"
 
 	"github.com/gofrs/uuid"
 )
@@ -14,7 +13,8 @@ type ID struct {
 func NewID() ID {
 	id, err := uuid.NewV4()
 	if err != nil {
-		log.Fatalf("error generating uuid: %v", err)
+		err = Wrap(err, "error generating uuid")
+		panic(err)
 	}
 	return ID{id}
 }

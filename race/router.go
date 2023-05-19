@@ -6,33 +6,23 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/exp/slog"
 )
-
-type RacesTemplateDataRow struct {
-	RaceId     core.ID
-	RaceName   string
-	StartAt    time.Time
-	Organizers string
-}
 
 type RacesTemplateData struct {
 	LoggedInUser auth.User
-	Races        []RacesTemplateDataRow
+	Races        []RaceListModel
 }
 
 type RaceTemplateData struct {
-	LoggedInUser          auth.User
-	RaceId                core.ID
-	Name                  string
-	IsOpenForRegistration bool
-	StartAt               time.Time
-	IsEditable            bool
+	LoggedInUser auth.User
+	Race         RaceDetailModel
 }
 
 func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
@@ -40,7 +30,8 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 	paris, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
 		err = core.Wrap(err, "error loading location")
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -48,32 +39,12 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		loggedInUser, _ := auth.UserFromContext(ctx)
 		templateData := RacesTemplateData{
 			LoggedInUser: loggedInUser,
-		}
-		rows, err := conn.Query(ctx, `
-		SELECT races.id, races.name, races.start_at, string_agg(users.username, ', ')
-		FROM races
-		LEFT JOIN race_organizers ON races.id = race_organizers.race_id
-		LEFT JOIN users ON race_organizers.user_id = users.id
-		GROUP BY races.id, races.name
-		`)
-		if err != nil {
-			err = core.Wrap(err, "error querying races")
-			log.Fatal(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var row RacesTemplateDataRow
-			err := rows.Scan(&row.RaceId, &row.RaceName, &row.StartAt, &row.Organizers)
-			if err != nil {
-				err = core.Wrap(err, "error scanning races")
-				log.Fatal(err)
-			}
-			templateData.Races = append(templateData.Races, row)
+			Races:        RaceListQuery(ctx, conn),
 		}
 		err = tpl.ExecuteTemplate(w, "races.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
-			log.Fatal(err)
+			panic(err)
 		}
 	})
 
@@ -98,34 +69,23 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
 			err = core.Wrap(err, "error parsing raceId")
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		loggedInUser, _ := auth.UserFromContext(ctx)
 		templateData := RaceTemplateData{
 			LoggedInUser: loggedInUser,
 		}
-		err = conn.QueryRow(ctx, `
-		SELECT races.id, races.name, $2::UUID IS NOT NULL AND bool_or(race_organizers.user_id = $2) AS is_editable, races.is_open_for_registration, races.start_at
-		FROM races
-		LEFT JOIN race_organizers ON races.id = race_organizers.race_id 
-		WHERE races.id = $1
-		GROUP BY races.id, races.name
-		`, raceId, loggedInUser.Id).Scan(&templateData.RaceId, &templateData.Name, &templateData.IsEditable, &templateData.IsOpenForRegistration, &templateData.StartAt)
+		raceDetail, code, err := RaceDetailQuery(ctx, conn, raceId, loggedInUser)
 		if err != nil {
-			err = core.Wrap(err, "error querying race")
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), code)
 			return
 		}
+		templateData.Race = raceDetail
 		err = tpl.ExecuteTemplate(w, "race.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
+			panic(err)
 		}
 	})
 

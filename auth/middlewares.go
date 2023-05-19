@@ -4,13 +4,13 @@ import (
 	"bike_race/core"
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/exp/slog"
 )
 
 type userContext struct{}
@@ -32,37 +32,47 @@ func CookieAuthMiddleware(conn *pgx.Conn, secret []byte) func(http.Handler) http
 				return
 			} else if err != nil {
 				err = core.Wrap(err, "error reading cookie")
-				log.Fatal(err)
+				panic(err)
 			}
 			authentication, err := decrypt(secret, cookie.Value)
 			if err != nil {
 				err = core.Wrap(err, "error decrypting cookie")
-				log.Fatal(err)
+				slog.Warn(err.Error())
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			parts := strings.Split(authentication, ":")
 			if len(parts) != 2 {
 				err = errors.New("invalid cookie")
-				log.Fatal(err)
+				slog.Warn(err.Error())
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			userId, err := core.ParseID(parts[0])
 			if err != nil {
 				err = core.Wrap(err, "error parsing user id")
-				log.Fatal(err)
+				slog.Warn(err.Error())
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			expiresAtSeconds, err := strconv.Atoi(parts[1])
 			if err != nil {
 				err = core.Wrap(err, "error parsing expires at")
-				log.Fatal(err)
+				slog.Warn(err.Error())
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			expiresAt := time.Unix(int64(expiresAtSeconds), 0)
 			if time.Now().After(expiresAt) {
 				err = errors.New("cookie expired")
-				log.Fatal(err)
+				slog.Warn(err.Error())
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
 			}
 			user, err := LoadUser(conn, ctx, userId)
 			if err != nil {
 				err = core.Wrap(err, "error loading user")
-				log.Fatal(err)
+				panic(err)
 			}
 			ctx = context.WithValue(ctx, userContext{}, user)
 			next.ServeHTTP(w, r.WithContext(ctx))

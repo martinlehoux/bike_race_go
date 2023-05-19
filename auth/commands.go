@@ -4,7 +4,6 @@ import (
 	"bike_race/core"
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
@@ -44,21 +43,21 @@ func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, pass
 	`, username).Scan(&user.Id, &user.Username, &user.PasswordHash)
 	if err == pgx.ErrNoRows {
 		err = errors.New("user not found")
-		log.Println(err)
+		slog.Warn(err.Error())
 		return User{}, err
 	} else if err != nil {
 		err = core.Wrap(err, "error querying user")
-		log.Println(err)
+		slog.Error(err.Error())
 		return User{}, err
 	}
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		err = errors.New("incorrect password")
-		log.Println(err)
+		slog.Warn(err.Error())
 		return User{}, err
 	} else if err != nil {
 		err = core.Wrap(err, "error comparing password hash")
-		log.Println(err)
+		slog.Error(err.Error())
 		return User{}, err
 	}
 	return user, nil
