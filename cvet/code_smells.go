@@ -44,6 +44,18 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 					}
 				}
 			}
+			if strings.HasSuffix(node.Name.Name, "Command") {
+				if node.Type.Results.NumFields() != 2 {
+					pass.Reportf(node.Pos(), "command function must have 2 return value")
+				} else {
+					if !isIdent(node.Type.Results.List[0].Type, "int") {
+						pass.Reportf(node.Pos(), "query function must return an int code as the first return value")
+					}
+					if !isIdent(node.Type.Results.List[1].Type, "error") {
+						pass.Reportf(node.Pos(), "command function must return an error as the second return value")
+					}
+				}
+			}
 		}
 		return true
 	}

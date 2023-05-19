@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bike_race/core"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -10,8 +11,38 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slog"
 )
+
+func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, error) {
+	var user User
+	err := conn.QueryRow(ctx, `
+		SELECT id, username, password_hash
+		FROM users
+		WHERE username = $1
+	`, username).Scan(&user.Id, &user.Username, &user.PasswordHash)
+	if err == pgx.ErrNoRows {
+		err = errors.New("user not found")
+		slog.Warn(err.Error())
+		return User{}, err
+	} else if err != nil {
+		err = core.Wrap(err, "error querying user")
+		slog.Error(err.Error())
+		return User{}, err
+	}
+	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		err = errors.New("incorrect password")
+		slog.Warn(err.Error())
+		return User{}, err
+	} else if err != nil {
+		err = core.Wrap(err, "error comparing password hash")
+		slog.Error(err.Error())
+		return User{}, err
+	}
+	return user, nil
+}
 
 type UsersTemplateData struct {
 	LoggedInUser User
@@ -48,7 +79,7 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 
 	router.Post("/register", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		code, err := RegisterUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
+		code, err := RegisterUserCommand(ctx, conn, r.FormValue("username"), r.FormValue("password"))
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error()))

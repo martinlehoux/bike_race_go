@@ -60,7 +60,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
-		code, err := OrganizeRace(ctx, conn, r.FormValue("name"), loggedInUser)
+		code, err := OrganizeRaceCommand(ctx, conn, r.FormValue("name"), loggedInUser)
 		if err != nil {
 			w.WriteHeader(code)
 			w.Write([]byte(err.Error()))

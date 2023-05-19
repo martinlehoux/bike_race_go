@@ -10,7 +10,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func OrganizeRace(ctx context.Context, conn *pgx.Conn, name string, user auth.User) (int, error) {
+func OrganizeRaceCommand(ctx context.Context, conn *pgx.Conn, name string, user auth.User) (int, error) {
 	race, err := NewRace(name)
 	if err != nil {
 		err = core.Wrap(err, "error creating race")
