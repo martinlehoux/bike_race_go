@@ -12,8 +12,8 @@ import (
 )
 
 type RaceListModel struct {
-	RaceId     core.ID
-	RaceName   string
+	Id         core.ID
+	Name       string
 	StartAt    time.Time
 	Organizers string
 }
@@ -34,7 +34,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 	var races []RaceListModel
 	for rows.Next() {
 		var row RaceListModel
-		err := rows.Scan(&row.RaceId, &row.RaceName, &row.StartAt, &row.Organizers)
+		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.Organizers)
 		if err != nil {
 			err = core.Wrap(err, "error scanning races")
 			panic(err)

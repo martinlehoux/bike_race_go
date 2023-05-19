@@ -1,41 +1,37 @@
-{{ template "head.html" . }}
-<html>
+{{ template "layout.html" . }}
 
-<body>
-  {{ template "navbar.html" . }}
-  <h1>All races</h1>
-  <form action="/races/organize" method="post">
-    <fieldset>
-      <input type="text" name="name" placeholder="Race name" />
-      <input type="submit" value="Organize race">
-    </fieldset>
-  </form>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Start at</th>
-        <th>Organizers</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Races}}
-      <tr>
-        <td>
-          <a href="/races/{{.RaceId.String}}">{{.RaceName}}</a>
-        </td>
-        <td>
-          {{if not .StartAt.IsZero }}
-          {{.StartAt}}
-          {{else}}
-          <i>Not chosen</i>
-          {{end}}
-        </td>
-        <td>{{.Organizers}}</td>
-      </tr>
-      {{end}}
-    </tbody>
-  </table>
-</body>
-
-</html>
+{{ define "content" }}
+<h1>All races</h1>
+<form action="/races/organize" method="post">
+  <fieldset>
+    <input type="text" name="name" placeholder="Race name" />
+    <input type="submit" value="Organize race">
+  </fieldset>
+</form>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Start at</th>
+      <th>Organizers</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Races}}
+    <tr>
+      <td>
+        <a href="/races/{{.Id.String}}">{{.Name}}</a>
+      </td>
+      <td>
+        {{if not .StartAt.IsZero }}
+        {{.StartAt}}
+        {{else}}
+        <i>Not chosen</i>
+        {{end}}
+      </td>
+      <td>{{.Organizers}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{ end }}

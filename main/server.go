@@ -60,17 +60,6 @@ func connectDatabase() *pgx.Conn {
 	return conn
 }
 
-func parseTemplates() *template.Template {
-	tpl, err := template.ParseGlob("templates/*.html")
-	if err != nil {
-		err = core.Wrap(err, "error parsing templates")
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
-	slog.Info("templates parsed")
-	return tpl
-}
-
 func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	ctx := context.Background()
@@ -78,26 +67,26 @@ func main() {
 	cookiesSecret := loadCookieSecret()
 	conn := connectDatabase()
 	defer conn.Close(ctx)
-	tpl := parseTemplates()
+	baseTpl := template.Must(template.ParseGlob("templates/base/*.html"))
 
 	router := chi.NewRouter()
-	router.Use(core.RequestLoggerMiddleware)
 	router.Use(middleware.Recoverer)
 	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
+	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		loggedInUser, _ := auth.UserFromContext(r.Context())
-		err := tpl.ExecuteTemplate(w, "index.html", IndexTemplateData{LoggedInUser: loggedInUser})
+		err := indexTpl.ExecuteTemplate(w, "index.html", IndexTemplateData{LoggedInUser: loggedInUser})
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)
 		}
 	})
 
-	router.Mount("/users", auth.Router(conn, tpl, cookiesSecret))
-	router.Mount("/races", race.Router(conn, tpl))
+	router.Mount("/users", auth.Router(conn, baseTpl, cookiesSecret))
+	router.Mount("/races", race.Router(conn, baseTpl))
 
 	slog.Info("listening on http://localhost:3000")
 	http.ListenAndServe(":3000", router)

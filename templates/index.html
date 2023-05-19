@@ -1,29 +1,25 @@
-<html>
-{{ template "head.html" . }}
+{{ template "layout.html" . }}
 
-<body>
-  {{ template "navbar.html" . }}
-  {{ if .LoggedInUser.Username }}
-  <p>Hello {{.LoggedInUser.Username}}</p>
-  <form action="/users/log_out" method="post">
-    <input type="submit" value="Log Out" />
-  </form>
-  {{ else }}
-  <form action="/users/register" method="post">
-    <fieldset>
-      <input type="text" name="username" placeholder="Username" />
-      <input type="password" name="password" placeholder="password">
-      <input type="submit" value="Register" />
-    </fieldset>
-  </form>
-  <form action="/users/log_in" method="post">
-    <fieldset>
-      <input type="text" name="username" placeholder="Username" />
-      <input type="password" name="password" placeholder="password">
-      <input type="submit" value="Log In" />
-    </fieldset>
-  </form>
-  {{ end }}
-</body>
-
-</html>
+{{ define "content" }}
+{{ if .LoggedInUser.Username }}
+<p>Hello {{.LoggedInUser.Username}}</p>
+<form action="/users/log_out" method="post">
+  <input type="submit" value="Log Out" />
+</form>
+{{ else }}
+<form action="/users/register" method="post">
+  <fieldset>
+    <input type="text" name="username" placeholder="Username" />
+    <input type="password" name="password" placeholder="password">
+    <input type="submit" value="Register" />
+  </fieldset>
+</form>
+<form action="/users/log_in" method="post">
+  <fieldset>
+    <input type="text" name="username" placeholder="Username" />
+    <input type="password" name="password" placeholder="password">
+    <input type="submit" value="Log In" />
+  </fieldset>
+</form>
+{{ end }}
+{{ end }}

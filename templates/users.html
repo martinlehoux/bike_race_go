@@ -1,23 +1,19 @@
-{{ template "head.html" .}}
-<html>
+{{ template "layout.html" . }}
 
-<body>
-  {{ template "navbar.html" .}}
-  <h1>All users</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Username</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{range .Users}}
-      <tr>
-        <td>{{.Username}}</td>
-      </tr>
-      {{end}}
-    </tbody>
-  </table>
-</body>
-
-</html>
+{{ define "content" }}
+<h1>All users</h1>
+<table>
+  <thead>
+    <tr>
+      <th>Username</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Users}}
+    <tr>
+      <td>{{.Username}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{ end }}

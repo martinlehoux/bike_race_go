@@ -25,7 +25,7 @@ type RaceTemplateData struct {
 	Race         RaceDetailModel
 }
 
-func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
+func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 	router := chi.NewRouter()
 	paris, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
@@ -34,6 +34,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		os.Exit(1)
 	}
 
+	raceListTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/races.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		loggedInUser, _ := auth.UserFromContext(ctx)
@@ -46,7 +47,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			LoggedInUser: loggedInUser,
 			Races:        races,
 		}
-		err = tpl.ExecuteTemplate(w, "races.html", templateData)
+		err = raceListTpl.ExecuteTemplate(w, "races.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)
@@ -68,6 +69,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		}
 	})
 
+	raceDetailTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/race.html"))
 	router.Get("/{raceId}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
@@ -86,7 +88,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			return
 		}
 		templateData.Race = raceDetail
-		err = tpl.ExecuteTemplate(w, "race.html", templateData)
+		err = raceDetailTpl.ExecuteTemplate(w, "race.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)

@@ -1,22 +1,18 @@
-<html>
-{{template "head.html" . }}
+{{template "layout.html" . }}
 
-<body>
-  {{template "navbar.html" .}}
-  <h1>{{.Name}}</h1>
+{{ define "content" }}
+<h1>{{.Race.Name}}</h1>
 
-  {{if .IsEditable}}
-  <form action="/races/{{.RaceId.String}}" method="post">
-    <fieldset>
-      <input type="datetime-local" name="start_at" {{if not
-        .StartAt.IsZero}}value="{{.StartAt.Format `2006-01-02T15:04`}}" {{end}} />
-      <label for="is_open_for_registration">Open for registration</label>
-      <input type="checkbox" id="is_open_for_registration" name="is_open_for_registration" {{if
-        .IsOpenForRegistration}}checked{{end}}>
-      <input type="submit" value="Change registration settings">
-    </fieldset>
-  </form>
-  {{end}}
-</body>
-
-</html>
+{{if .Race.IsEditable}}
+<form action="/races/{{.Race.Id.String}}" method="post">
+  <fieldset>
+    <input type="datetime-local" name="start_at" {{if not
+      .Race.StartAt.IsZero}}value="{{.Race.StartAt.Format `2006-01-02T15:04`}}" {{end}} />
+    <label for="is_open_for_registration">Open for registration</label>
+    <input type="checkbox" id="is_open_for_registration" name="is_open_for_registration" {{if
+      .Race.IsOpenForRegistration}}checked{{end}}>
+    <input type="submit" value="Change registration settings">
+  </fieldset>
+</form>
+{{ end }}
+{{ end }}

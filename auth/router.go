@@ -48,9 +48,10 @@ type UsersTemplateData struct {
 	Users        []UserListModel
 }
 
-func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Router {
+func Router(conn *pgx.Conn, baseTpl *template.Template, cookiesSecret []byte) chi.Router {
 	router := chi.NewRouter()
 
+	userListTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		loggedInUser, ok := UserFromContext(ctx)
@@ -67,7 +68,7 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 			LoggedInUser: loggedInUser,
 			Users:        users,
 		}
-		err = tpl.ExecuteTemplate(w, "users.html", templateData)
+		err = userListTpl.ExecuteTemplate(w, "users.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			slog.Error(err.Error())
