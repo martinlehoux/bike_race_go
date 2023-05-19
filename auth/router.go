@@ -15,7 +15,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, error) {
+func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, int, error) {
 	var user User
 	err := conn.QueryRow(ctx, `
 		SELECT id, username, password_hash
@@ -25,23 +25,22 @@ func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, pass
 	if err == pgx.ErrNoRows {
 		err = errors.New("user not found")
 		slog.Warn(err.Error())
-		return User{}, err
+		return User{}, http.StatusNotFound, err
 	} else if err != nil {
 		err = core.Wrap(err, "error querying user")
-		slog.Error(err.Error())
-		return User{}, err
+		panic(err)
 	}
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		err = errors.New("incorrect password")
 		slog.Warn(err.Error())
-		return User{}, err
+		return User{}, http.StatusBadRequest, err
 	} else if err != nil {
 		err = core.Wrap(err, "error comparing password hash")
 		slog.Error(err.Error())
-		return User{}, err
+		panic(err)
 	}
-	return user, nil
+	return user, http.StatusOK, nil
 }
 
 type UsersTemplateData struct {
@@ -81,8 +80,7 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 		ctx := r.Context()
 		code, err := RegisterUserCommand(ctx, conn, r.FormValue("username"), r.FormValue("password"))
 		if err != nil {
-			w.WriteHeader(code)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), code)
 		} else {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
@@ -90,9 +88,9 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 
 	router.Post("/log_in", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		user, err := AuthenticateUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
+		user, code, err := AuthenticateUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), code)
 			return
 		} else {
 			expiresAt := time.Now().Add(24 * time.Hour)

@@ -62,8 +62,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		}
 		code, err := OrganizeRaceCommand(ctx, conn, r.FormValue("name"), loggedInUser)
 		if err != nil {
-			w.WriteHeader(code)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), code)
 		} else {
 			http.Redirect(w, r, "/races", http.StatusSeeOther)
 		}
@@ -99,15 +98,15 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
 			err = core.Wrap(err, "error parsing raceId")
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		race, err := LoadRace(conn, ctx, raceId)
 		if err != nil {
 			err = core.Wrap(err, "error loading race")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			slog.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		loggedInUser, ok := auth.UserFromContext(ctx)
@@ -123,15 +122,15 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 		race.StartAt, err = time.ParseInLocation("2006-01-02T15:04", r.FormValue("start_at"), paris)
 		if err != nil {
 			err = core.Wrap(err, "error parsing start_at")
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		err = race.Save(conn, ctx)
 		if err != nil {
-			err = core.Wrap(err, "error save race")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			err = core.Wrap(err, "error saving race")
+			slog.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		http.Redirect(w, r, fmt.Sprintf("/races/%s", race.Id.String()), http.StatusSeeOther)
