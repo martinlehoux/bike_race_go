@@ -3,6 +3,7 @@ package auth
 import (
 	"bike_race/core"
 	"context"
+	"net/http"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -11,7 +12,7 @@ type UserListModel struct {
 	Username string
 }
 
-func UserListQuery(ctx context.Context, conn *pgx.Conn) []UserListModel {
+func UserListQuery(ctx context.Context, conn *pgx.Conn) ([]UserListModel, int, error) {
 	rows, err := conn.Query(ctx, `SELECT username FROM users`)
 	if err != nil {
 		err = core.Wrap(err, "error querying users")
@@ -30,5 +31,5 @@ func UserListQuery(ctx context.Context, conn *pgx.Conn) []UserListModel {
 		users = append(users, user)
 	}
 
-	return users
+	return users, http.StatusOK, nil
 }

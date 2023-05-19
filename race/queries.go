@@ -18,7 +18,7 @@ type RaceListModel struct {
 	Organizers string
 }
 
-func RaceListQuery(ctx context.Context, conn *pgx.Conn) []RaceListModel {
+func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, error) {
 	rows, err := conn.Query(ctx, `
 		SELECT races.id, races.name, races.start_at, string_agg(users.username, ', ')
 		FROM races
@@ -41,7 +41,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) []RaceListModel {
 		}
 		races = append(races, row)
 	}
-	return races
+	return races, http.StatusOK, nil
 }
 
 type RaceDetailModel struct {

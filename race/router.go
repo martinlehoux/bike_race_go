@@ -37,9 +37,14 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		loggedInUser, _ := auth.UserFromContext(ctx)
+		races, code, err := RaceListQuery(ctx, conn)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
 		templateData := RacesTemplateData{
 			LoggedInUser: loggedInUser,
-			Races:        RaceListQuery(ctx, conn),
+			Races:        races,
 		}
 		err = tpl.ExecuteTemplate(w, "races.html", templateData)
 		if err != nil {

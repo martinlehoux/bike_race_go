@@ -28,11 +28,16 @@ func Router(conn *pgx.Conn, tpl *template.Template, cookiesSecret []byte) chi.Ro
 			Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
+		users, code, err := UserListQuery(ctx, conn)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
 		templateData := UsersTemplateData{
 			LoggedInUser: loggedInUser,
-			Users:        UserListQuery(ctx, conn),
+			Users:        users,
 		}
-		err := tpl.ExecuteTemplate(w, "users.html", templateData)
+		err = tpl.ExecuteTemplate(w, "users.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			slog.Error(err.Error())
