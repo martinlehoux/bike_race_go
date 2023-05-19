@@ -70,7 +70,7 @@ func main() {
 	baseTpl := template.Must(template.ParseGlob("templates/base/*.html"))
 
 	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
+	router.Use(core.RecoverMiddleware)
 	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
