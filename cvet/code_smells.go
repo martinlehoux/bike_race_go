@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bike_race/core"
 	"go/ast"
 	"strings"
 
@@ -54,6 +55,19 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 					if !isIdent(node.Type.Results.List[1].Type, "error") {
 						pass.Reportf(node.Pos(), "command function must return an error as the second return value")
 					}
+				}
+			}
+			if field := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
+				if selector, ok := field.Type.(*ast.SelectorExpr); ok {
+					return isIdent(selector.X, "context") && isIdent(selector.Sel, "Context")
+				}
+				return false
+			}); field != nil {
+				if *field != node.Type.Params.List[0] {
+					pass.Reportf(node.Pos(), "context.Context must be the first parameter")
+				}
+				if (*field).Names[0].Name != "ctx" {
+					pass.Reportf(node.Pos(), "context.Context parameter must be named ctx")
 				}
 			}
 		}

@@ -69,7 +69,7 @@ func CookieAuthMiddleware(conn *pgx.Conn, secret []byte) func(http.Handler) http
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
-			user, err := LoadUser(conn, ctx, userId)
+			user, err := LoadUser(ctx, conn, userId)
 			if err != nil {
 				err = core.Wrap(err, "error loading user")
 				panic(err)

@@ -23,7 +23,7 @@ func OrganizeRaceCommand(ctx context.Context, conn *pgx.Conn, name string, user 
 		slog.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	err = race.Save(conn, ctx)
+	err = race.Save(ctx, conn)
 	if err != nil {
 		err = core.Wrap(err, "error saving race")
 		slog.Error(err.Error())

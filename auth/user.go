@@ -25,7 +25,7 @@ func NewUser(username string) (User, error) {
 	return user, nil
 }
 
-func LoadUser(conn *pgx.Conn, ctx context.Context, userId core.ID) (User, error) {
+func LoadUser(ctx context.Context, conn *pgx.Conn, userId core.ID) (User, error) {
 	var user User
 	err := conn.QueryRow(ctx, `
 		SELECT id, username, password_hash
@@ -40,7 +40,7 @@ func LoadUser(conn *pgx.Conn, ctx context.Context, userId core.ID) (User, error)
 	return user, nil
 }
 
-func (user *User) Save(conn *pgx.Conn, ctx context.Context) error {
+func (user *User) Save(ctx context.Context, conn *pgx.Conn) error {
 	_, err := conn.Exec(ctx, `
 		INSERT INTO users (id, username, password_hash)
 		VALUES ($1, $2, $3)

@@ -23,7 +23,7 @@ func RegisterUserCommand(ctx context.Context, conn *pgx.Conn, username string, p
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	err = user.Save(conn, ctx)
+	err = user.Save(ctx, conn)
 	if err != nil {
 		err = core.Wrap(err, "error saving user")
 		logger.Error(err.Error())

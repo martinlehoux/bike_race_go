@@ -102,7 +102,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		race, err := LoadRace(conn, ctx, raceId)
+		race, err := LoadRace(ctx, conn, raceId)
 		if err != nil {
 			err = core.Wrap(err, "error loading race")
 			slog.Error(err.Error())
@@ -126,7 +126,7 @@ func Router(conn *pgx.Conn, tpl *template.Template) chi.Router {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = race.Save(conn, ctx)
+		err = race.Save(ctx, conn)
 		if err != nil {
 			err = core.Wrap(err, "error saving race")
 			slog.Error(err.Error())

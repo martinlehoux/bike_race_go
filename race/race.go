@@ -30,7 +30,7 @@ func NewRace(name string) (Race, error) {
 	}, nil
 }
 
-func LoadRace(conn *pgx.Conn, ctx context.Context, raceId core.ID) (Race, error) {
+func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error) {
 	var race Race
 	var organizers []core.ID
 	err := conn.QueryRow(ctx, `
@@ -45,7 +45,7 @@ func LoadRace(conn *pgx.Conn, ctx context.Context, raceId core.ID) (Race, error)
 		return Race{}, core.Wrap(err, "error selecting races table")
 	}
 	for _, organizerId := range organizers {
-		user, err := auth.LoadUser(conn, ctx, organizerId)
+		user, err := auth.LoadUser(ctx, conn, organizerId)
 		if err != nil {
 			return Race{}, core.Wrap(err, "error loading user")
 		}
@@ -54,7 +54,7 @@ func LoadRace(conn *pgx.Conn, ctx context.Context, raceId core.ID) (Race, error)
 	return race, nil
 }
 
-func (race *Race) Save(conn *pgx.Conn, ctx context.Context) error {
+func (race *Race) Save(ctx context.Context, conn *pgx.Conn) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return core.Wrap(err, "error beginning transaction")
