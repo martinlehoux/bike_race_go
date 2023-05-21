@@ -13,7 +13,7 @@ import (
 type Race struct {
 	Id                    core.ID
 	Name                  string
-	Organizers            []auth.User
+	Organizers            []core.ID
 	StartAt               time.Time
 	IsOpenForRegistration bool
 }
@@ -25,14 +25,13 @@ func NewRace(name string) (Race, error) {
 	return Race{
 		Id:                    core.NewID(),
 		Name:                  name,
-		Organizers:            []auth.User{},
+		Organizers:            []core.ID{},
 		IsOpenForRegistration: false,
 	}, nil
 }
 
 func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error) {
 	var race Race
-	var organizers []core.ID
 	err := conn.QueryRow(ctx, `
 	SELECT races.id, races.name, races.start_at, races.is_open_for_registration,
 	array_agg(race_organizers.user_id) as user_ids
@@ -40,16 +39,9 @@ func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error)
 	LEFT JOIN race_organizers ON races.id = race_organizers.race_id
 	WHERE races.id = $1
 	GROUP BY races.id, races.name, races.start_at, races.is_open_for_registration
-	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &organizers)
+	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &race.Organizers)
 	if err != nil {
 		return Race{}, core.Wrap(err, "error selecting races table")
-	}
-	for _, organizerId := range organizers {
-		user, err := auth.LoadUser(ctx, conn, organizerId)
-		if err != nil {
-			return Race{}, core.Wrap(err, "error loading user")
-		}
-		race.Organizers = append(race.Organizers, user)
 	}
 	return race, nil
 }
@@ -72,7 +64,7 @@ func (race *Race) Save(ctx context.Context, conn *pgx.Conn) error {
 		INSERT INTO race_organizers (race_id, user_id)
 		VALUES ($1, $2)
 		ON CONFLICT (race_id, user_id) DO NOTHING
-		`, race.Id, organizer.Id)
+		`, race.Id, organizer)
 		if err != nil {
 			return core.Wrap(err, "error upserting race_organizers table")
 		}
@@ -81,6 +73,6 @@ func (race *Race) Save(ctx context.Context, conn *pgx.Conn) error {
 }
 
 func (race *Race) AddOrganizer(user auth.User) error {
-	race.Organizers = append(race.Organizers, user)
+	race.Organizers = append(race.Organizers, user.Id)
 	return nil
 }

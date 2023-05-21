@@ -116,7 +116,7 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 			auth.Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
-		if org := core.Find(race.Organizers, func(user auth.User) bool { return user.Id == loggedInUser.Id }); org == nil {
+		if org := core.Find(race.Organizers, func(userId core.ID) bool { return userId == loggedInUser.Id }); org == nil {
 			auth.Unauthorized(w, errors.New("not an organizer"))
 			return
 		}
