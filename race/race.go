@@ -94,6 +94,9 @@ func (race *Race) Register(user auth.User) error {
 	if core.Find(race.RegisteredUsers, func(userId core.ID) bool { return userId == user.Id }) != nil {
 		return errors.New("user already registered")
 	}
+	if !race.IsOpenForRegistration {
+		return errors.New("registration is closed")
+	}
 	race.RegisteredUsers = append(race.RegisteredUsers, user.Id)
 	return nil
 }
