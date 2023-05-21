@@ -16,6 +16,7 @@ import (
 )
 
 func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, int, error) {
+	slog.Info("Authenticating user", slog.String("username", username))
 	var user User
 	err := conn.QueryRow(ctx, `
 		SELECT id, username, password_hash
@@ -40,6 +41,8 @@ func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, pass
 		slog.Error(err.Error())
 		panic(err)
 	}
+
+	slog.Info("User authenticated", slog.String("username", username))
 	return user, http.StatusOK, nil
 }
 
