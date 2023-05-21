@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -27,7 +28,7 @@ type RaceTemplateData struct {
 
 func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 	router := chi.NewRouter()
-	paris, err := time.LoadLocation("Europe/Paris")
+	_, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
 		err = core.Wrap(err, "error loading location")
 		slog.Error(err.Error())
@@ -56,12 +57,7 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 
 	router.Post("/organize", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		loggedInUser, ok := auth.UserFromContext(ctx)
-		if !ok {
-			auth.Unauthorized(w, errors.New("not authenticated"))
-			return
-		}
-		code, err := OrganizeRaceCommand(ctx, conn, r.FormValue("name"), loggedInUser)
+		code, err := OrganizeRaceCommand(ctx, conn, r.FormValue("name"))
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {
@@ -95,7 +91,7 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 		}
 	})
 
-	router.Post("/{raceId}", func(w http.ResponseWriter, r *http.Request) {
+	router.Post("/{raceId}/open_for_registration", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
@@ -104,38 +100,20 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		race, err := LoadRace(ctx, conn, raceId)
+		maximumParticipants, err := strconv.Atoi(r.FormValue("maximum_participants"))
 		if err != nil {
-			err = core.Wrap(err, "error loading race")
-			slog.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		loggedInUser, ok := auth.UserFromContext(ctx)
-		if !ok {
-			auth.Unauthorized(w, errors.New("not authenticated"))
-			return
-		}
-		if org := core.Find(race.Organizers, func(userId core.ID) bool { return userId == loggedInUser.Id }); org == nil {
-			auth.Unauthorized(w, errors.New("not an organizer"))
-			return
-		}
-		race.IsOpenForRegistration = r.FormValue("is_open_for_registration") == "on"
-		race.StartAt, err = time.ParseInLocation("2006-01-02T15:04", r.FormValue("start_at"), paris)
-		if err != nil {
-			err = core.Wrap(err, "error parsing start_at")
+			err = core.Wrap(err, "error parsing maximum_participants")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = race.Save(ctx, conn)
+		code, err := OpenRaceForRegistration(ctx, conn, raceId, maximumParticipants)
 		if err != nil {
-			err = core.Wrap(err, "error saving race")
-			slog.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), code)
 			return
+		} else {
+			http.Redirect(w, r, fmt.Sprintf("/races/%s", raceId.String()), http.StatusSeeOther)
 		}
-		http.Redirect(w, r, fmt.Sprintf("/races/%s", race.Id.String()), http.StatusSeeOther)
 	})
 
 	router.Post("/{raceId}/register", func(w http.ResponseWriter, r *http.Request) {

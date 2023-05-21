@@ -4,14 +4,14 @@
 <h1>{{.Race.Name}}</h1>
 
 {{if .Race.IsEditable}}
-<form action="/races/{{.Race.Id.String}}" method="post">
+<form action="/races/{{.Race.Id.String}}/open_for_registration" method="post">
   <fieldset>
     <input type="datetime-local" name="start_at" {{if not
       .Race.StartAt.IsZero}}value="{{.Race.StartAt.Format `2006-01-02T15:04`}}" {{end}} />
-    <label for="is_open_for_registration">Open for registration</label>
-    <input type="checkbox" id="is_open_for_registration" name="is_open_for_registration" {{if
-      .Race.IsOpenForRegistration}}checked{{end}}>
-    <input type="submit" value="Change registration settings">
+    <label for="maximum_participants">Maximum participants</label>
+    <input type="number" name="maximum_participants" id="maximum_participants" min="1"
+      value="{{.Race.MaximumParticipants}}">
+    <input type="submit" value="Open for registration">
   </fieldset>
 </form>
 {{ end }}

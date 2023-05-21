@@ -42,7 +42,8 @@ CREATE TABLE public.races (
     id uuid NOT NULL,
     name character varying(255) NOT NULL,
     start_at timestamp with time zone NOT NULL,
-    is_open_for_registration boolean NOT NULL
+    is_open_for_registration boolean NOT NULL,
+    maximum_participants integer DEFAULT 0 NOT NULL
 );
 
 
@@ -167,4 +168,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230504203320'),
     ('20230505202311'),
     ('20230507193814'),
-    ('20230521110535');
+    ('20230521110535'),
+    ('20230521163127');

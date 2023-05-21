@@ -34,7 +34,7 @@
       <td>{{.Organizers}}</td>
       <td>
         {{if .IsOpenForRegistration}}
-        {{.RegisteredCount}}
+        {{.RegisteredCount}} / {{.MaximumParticipants}}
         {{else}}
         Closed
         {{end}}
