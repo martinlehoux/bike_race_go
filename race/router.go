@@ -138,5 +138,29 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 		http.Redirect(w, r, fmt.Sprintf("/races/%s", race.Id.String()), http.StatusSeeOther)
 	})
 
+	router.Post("/{raceId}/register", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user, ok := auth.UserFromContext(ctx)
+		if !ok {
+			auth.Unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		code, err := RegisterForRaceCommand(ctx, conn, raceId, user)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+		} else {
+			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+		}
+	})
+
 	return router
 }

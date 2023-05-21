@@ -24,6 +24,17 @@ CREATE TABLE public.race_organizers (
 
 
 --
+-- Name: race_registered_users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.race_registered_users (
+    race_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    registered_at timestamp with time zone NOT NULL
+);
+
+
+--
 -- Name: races; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -61,6 +72,14 @@ CREATE TABLE public.users (
 
 ALTER TABLE ONLY public.race_organizers
     ADD CONSTRAINT race_organizers_pkey PRIMARY KEY (race_id, user_id);
+
+
+--
+-- Name: race_registered_users race_registered_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_registered_users
+    ADD CONSTRAINT race_registered_users_pkey PRIMARY KEY (race_id, user_id);
 
 
 --
@@ -120,6 +139,22 @@ ALTER TABLE ONLY public.race_organizers
 
 
 --
+-- Name: race_registered_users race_registered_users_race_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_registered_users
+    ADD CONSTRAINT race_registered_users_race_id_fkey FOREIGN KEY (race_id) REFERENCES public.races(id);
+
+
+--
+-- Name: race_registered_users race_registered_users_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.race_registered_users
+    ADD CONSTRAINT race_registered_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -131,4 +166,5 @@ ALTER TABLE ONLY public.race_organizers
 INSERT INTO public.schema_migrations (version) VALUES
     ('20230504203320'),
     ('20230505202311'),
-    ('20230507193814');
+    ('20230507193814'),
+    ('20230521110535');
