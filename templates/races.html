@@ -33,11 +33,7 @@
       </td>
       <td>{{.Organizers}}</td>
       <td>
-        {{if .IsOpenForRegistration}}
         {{.RegisteredCount}} / {{.MaximumParticipants}}
-        {{else}}
-        Closed
-        {{end}}
       </td>
       <td>
         {{if .CanRegister}}
