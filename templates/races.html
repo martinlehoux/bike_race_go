@@ -40,9 +40,11 @@
         {{end}}
       </td>
       <td>
+        {{if .CanRegister}}
         <form action="/races/{{.Id.String}}/register" method="post">
           <input type="submit" value="Register">
         </form>
+        {{end}}
       </td>
     </tr>
     {{end}}
