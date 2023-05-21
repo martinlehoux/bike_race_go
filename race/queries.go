@@ -12,18 +12,24 @@ import (
 )
 
 type RaceListModel struct {
-	Id         core.ID
-	Name       string
-	StartAt    time.Time
-	Organizers string
+	Id                    core.ID
+	Name                  string
+	StartAt               time.Time
+	IsOpenForRegistration bool
+	Organizers            string
+	RegisteredCount       int
 }
 
 func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, error) {
 	rows, err := conn.Query(ctx, `
-		SELECT races.id, races.name, races.start_at, string_agg(users.username, ', ')
+		SELECT
+			races.id, races.name, races.start_at, races.is_open_for_registration,
+			string_agg(users.username, ', '),
+			count(distinct race_registered_users.user_id) filter (where race_registered_users.user_id is not null)
 		FROM races
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id
 		LEFT JOIN users ON race_organizers.user_id = users.id
+		LEFT JOIN race_registered_users on races.id = race_registered_users.race_id
 		GROUP BY races.id, races.name
 		`)
 	if err != nil {
@@ -34,7 +40,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 	var races []RaceListModel
 	for rows.Next() {
 		var row RaceListModel
-		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.Organizers)
+		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.Organizers, &row.RegisteredCount)
 		if err != nil {
 			err = core.Wrap(err, "error scanning races")
 			panic(err)
