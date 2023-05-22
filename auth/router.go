@@ -38,7 +38,6 @@ func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, pass
 		return User{}, http.StatusBadRequest, err
 	} else if err != nil {
 		err = core.Wrap(err, "error comparing password hash")
-		slog.Error(err.Error())
 		panic(err)
 	}
 
