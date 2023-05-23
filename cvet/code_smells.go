@@ -21,16 +21,28 @@ func isIdent(node ast.Node, name string) bool {
 	return false
 }
 
+func isLiteralSelector(node ast.Node, left string, right string) bool {
+	if selector, ok := node.(*ast.SelectorExpr); ok {
+		return isIdent(selector.X, left) && isIdent(selector.Sel, right)
+	}
+	return false
+}
+
 func checkCommandFunc(pass *analysis.Pass, node *ast.FuncDecl) {
 	if node.Type.Results.NumFields() != 2 {
 		pass.Reportf(node.Pos(), "command function must have 2 return value")
 	} else {
 		if !isIdent(node.Type.Results.List[0].Type, "int") {
-			pass.Reportf(node.Pos(), "query function must return an int code as the first return value")
+			pass.Reportf(node.Pos(), "command function must return an int code as the first return value")
 		}
 		if !isIdent(node.Type.Results.List[1].Type, "error") {
 			pass.Reportf(node.Pos(), "command function must return an error as the second return value")
 		}
+	}
+	if userField := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
+		return isLiteralSelector(field.Type, "auth", "User")
+	}); userField != nil {
+		pass.Reportf(node.Pos(), "command function must not have an auth.User parameter")
 	}
 }
 
@@ -88,10 +100,7 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 				checkCommandFunc(pass, node)
 			}
 			if field := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
-				if selector, ok := field.Type.(*ast.SelectorExpr); ok {
-					return isIdent(selector.X, "context") && isIdent(selector.Sel, "Context")
-				}
-				return false
+				return isLiteralSelector(field.Type, "context", "Context")
 			}); field != nil {
 				if *field != node.Type.Params.List[0] {
 					pass.Reportf(node.Pos(), "context.Context must be the first parameter")

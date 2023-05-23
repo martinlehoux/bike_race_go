@@ -3,7 +3,6 @@ package race
 import (
 	"bike_race/auth"
 	"bike_race/core"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -118,12 +117,6 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 
 	router.Post("/{raceId}/register", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		user, ok := auth.UserFromContext(ctx)
-		if !ok {
-			auth.Unauthorized(w, errors.New("not authenticated"))
-			return
-		}
-
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
 			err = core.Wrap(err, "error parsing raceId")
@@ -132,7 +125,7 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 			return
 		}
 
-		code, err := RegisterForRaceCommand(ctx, conn, raceId, user)
+		code, err := RegisterForRaceCommand(ctx, conn, raceId)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {

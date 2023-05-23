@@ -79,9 +79,15 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgx.Conn, raceId core.ID
 	return http.StatusOK, nil
 }
 
-func RegisterForRaceCommand(ctx context.Context, conn *pgx.Conn, raceId core.ID, user auth.User) (int, error) {
-	logger := slog.With(slog.String("userId", user.Id.String()), slog.String("raceId", raceId.String()))
-
+func RegisterForRaceCommand(ctx context.Context, conn *pgx.Conn, raceId core.ID) (int, error) {
+	logger := slog.With(slog.String("raceId", raceId.String()))
+	user, ok := auth.UserFromContext(ctx)
+	if !ok {
+		err := errors.New("user not logged in")
+		slog.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	logger = logger.With(slog.String("userId", user.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
