@@ -3,7 +3,7 @@
 {{ define "content" }}
 <h1>{{.Race.Name}}</h1>
 
-{{if .Race.IsEditable}}
+{{if .Race.CanOpenForRegistration}}
 <form action="/races/{{.Race.Id.String}}/open_for_registration" method="post">
   <fieldset>
     <input type="datetime-local" name="start_at" {{if not
@@ -15,4 +15,27 @@
   </fieldset>
 </form>
 {{ end }}
+
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Registration date</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .RaceRegistrations}}
+    <tr>
+      <td>{{.Username}}</td>
+      <td>{{.RegisteredAt}}</td>
+      <td>{{.Status}}</td>
+      <td>{{if $.Race.CanAcceptRegistrations}}<form
+          action="/races/{{$.Race.Id.String}}/registrations/{{.UserId.String}}/approve" method="post"><input
+            type="submit" value="Approve"></form>{{end}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
 {{ end }}

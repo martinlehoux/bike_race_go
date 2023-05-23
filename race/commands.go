@@ -112,3 +112,39 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgx.Conn, raceId core.ID)
 	logger.Info("user registered to race")
 	return http.StatusOK, nil
 }
+
+func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgx.Conn, raceId core.ID, userId core.ID) (int, error) {
+	logger := slog.With(slog.String("command", "ApproveRaceRegistrationCommand"), slog.String("raceId", raceId.String()), slog.String("userId", userId.String()))
+	logger.Info("approving user registration")
+	loggedInUser, ok := auth.UserFromContext(ctx)
+	if !ok {
+		err := errors.New("user not logged in")
+		logger.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	race, err := LoadRace(ctx, conn, raceId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		logger.Warn(err.Error())
+		return http.StatusNotFound, err
+	} else if err != nil {
+		panic(err)
+	}
+	if !race.CanAcceptRegistration(loggedInUser) {
+		err = errors.New("user not an organizer")
+		logger.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	err = race.ApproveRegistration(userId)
+	if err != nil {
+		err = core.Wrap(err, "error approving registration")
+		logger.Warn(err.Error())
+		return http.StatusBadRequest, err
+	}
+	err = race.Save(ctx, conn)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Info("user registration approved")
+	return http.StatusOK, nil
+}

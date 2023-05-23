@@ -15,7 +15,7 @@ type Race struct {
 	// Registration
 	IsOpenForRegistration bool
 	MaximumParticipants   int
-	Registrations         []RaceRegistration
+	Registrations         map[core.ID]RaceRegistration
 }
 
 func NewRace(name string) (Race, error) {
@@ -27,6 +27,7 @@ func NewRace(name string) (Race, error) {
 		Name:                  name,
 		Organizers:            []core.ID{},
 		IsOpenForRegistration: false,
+		Registrations:         map[core.ID]RaceRegistration{},
 	}, nil
 }
 
@@ -36,13 +37,14 @@ func (race *Race) AddOrganizer(user auth.User) error {
 }
 
 func (race *Race) Register(user auth.User) error {
-	if core.Find(race.Registrations, func(registration RaceRegistration) bool { return registration.UserId == user.Id }) != nil {
+	_, ok := race.Registrations[user.Id]
+	if ok {
 		return errors.New("user already registered")
 	}
 	if !race.IsOpenForRegistration {
 		return errors.New("registration is closed")
 	}
-	race.Registrations = append(race.Registrations, NewRaceRegistration(user.Id))
+	race.Registrations[user.Id] = NewRaceRegistration(user.Id)
 	return nil
 }
 
@@ -56,4 +58,21 @@ func (race *Race) OpenForRegistration(maximumParticipants int) error {
 	race.MaximumParticipants = maximumParticipants
 	race.IsOpenForRegistration = true
 	return nil
+}
+
+func (race *Race) ApproveRegistration(userId core.ID) error {
+	registration, ok := race.Registrations[userId]
+	if !ok {
+		return errors.New("user is not registered")
+	}
+	if registration.Status != Registered {
+		return errors.New("registration can't be approved")
+	}
+	registration.Status = Approved
+	race.Registrations[userId] = registration
+	return nil
+}
+
+func (race Race) CanAcceptRegistration(user auth.User) bool {
+	return race.IsOpenForRegistration && core.Find(race.Organizers, func(id core.ID) bool { return id == user.Id }) != nil
 }

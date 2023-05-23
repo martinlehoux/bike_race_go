@@ -21,8 +21,9 @@ type RacesTemplateData struct {
 }
 
 type RaceTemplateData struct {
-	LoggedInUser auth.User
-	Race         RaceDetailModel
+	LoggedInUser      auth.User
+	Race              RaceDetailModel
+	RaceRegistrations []RaceRegistrationModel
 }
 
 func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
@@ -83,6 +84,12 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 			return
 		}
 		templateData.Race = raceDetail
+		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+		templateData.RaceRegistrations = raceRegistrations
 		err = raceDetailTpl.ExecuteTemplate(w, "race.html", templateData)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
@@ -126,6 +133,30 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 		}
 
 		code, err := RegisterForRaceCommand(ctx, conn, raceId)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+		} else {
+			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+		}
+	})
+
+	router.Post("/{raceId}/registrations/{userId}/approve", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		userId, err := core.ParseID(chi.URLParam(r, "userId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing userId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		code, err := ApproveRaceRegistrationCommand(ctx, conn, raceId, userId)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {

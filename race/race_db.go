@@ -25,6 +25,7 @@ func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error)
 	if err != nil {
 		return Race{}, core.Wrap(err, "error selecting races table")
 	}
+	race.Registrations = map[core.ID]RaceRegistration{}
 	rows, err := tx.Query(ctx, `
 	SELECT user_id, registered_at, status
 	FROM race_registrations
@@ -40,7 +41,7 @@ func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error)
 		if err != nil {
 			return Race{}, core.Wrap(err, "error scanning race_registrations table")
 		}
-		race.Registrations = append(race.Registrations, registration)
+		race.Registrations[registration.UserId] = registration
 	}
 	return race, nil
 }

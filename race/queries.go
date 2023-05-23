@@ -72,20 +72,25 @@ type RaceDetailModel struct {
 	IsOpenForRegistration bool
 	MaximumParticipants   int
 	StartAt               time.Time
-	IsEditable            bool
+	// Permissions
+	CanOpenForRegistration bool
+	CanAcceptRegistrations bool
 }
 
 func RaceDetailQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID, loggedInUser auth.User) (RaceDetailModel, int, error) {
 	var race RaceDetailModel
+	var isLoggedInUserOrganizer bool
 	err := conn.QueryRow(ctx, `
 		SELECT
-			races.id, races.name, races.maximum_participants,
-			$2::UUID IS NOT NULL AND bool_or(race_organizers.user_id = $2) AS is_editable, races.is_open_for_registration, races.start_at
+			races.id, races.name, races.maximum_participants, races.is_open_for_registration, races.start_at,
+			$2::UUID IS NOT NULL AND bool_or(race_organizers.user_id = $2)
 		FROM races
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id 
 		WHERE races.id = $1
 		GROUP BY races.id, races.name
-		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsEditable, &race.IsOpenForRegistration, &race.StartAt)
+		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &isLoggedInUserOrganizer)
+	race.CanOpenForRegistration = isLoggedInUserOrganizer
+	race.CanAcceptRegistrations = isLoggedInUserOrganizer
 	if err == pgx.ErrNoRows {
 		err = errors.New("race not found")
 		return race, http.StatusNotFound, err
@@ -94,4 +99,41 @@ func RaceDetailQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID, logged
 		panic(err)
 	}
 	return race, http.StatusOK, nil
+}
+
+type RaceRegistrationModel struct {
+	UserId       core.ID
+	Username     string
+	Status       RaceRegistrationStatus
+	RegisteredAt time.Time
+}
+
+func RaceRegistrationsQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID) ([]RaceRegistrationModel, int, error) {
+	var registrations []RaceRegistrationModel
+	rows, err := conn.Query(ctx, `
+		SELECT
+			race_registrations.user_id,
+			race_registrations.status,
+			race_registrations.registered_at,
+			users.username
+		FROM race_registrations
+		LEFT JOIN users ON users.id = race_registrations.user_id
+		WHERE race_registrations.race_id = $1
+		ORDER BY race_registrations.registered_at ASC
+		`, raceId)
+	if err != nil {
+		err = core.Wrap(err, "error querying race_registrations")
+		panic(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var registration RaceRegistrationModel
+		err := rows.Scan(&registration.UserId, &registration.Status, &registration.RegisteredAt, &registration.Username)
+		if err != nil {
+			err = core.Wrap(err, "error scanning race_registrations")
+			panic(err)
+		}
+		registrations = append(registrations, registration)
+	}
+	return registrations, http.StatusOK, nil
 }
