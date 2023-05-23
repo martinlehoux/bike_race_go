@@ -10,13 +10,14 @@ import (
 )
 
 func RegisterUserCommand(ctx context.Context, conn *pgx.Conn, username string, password string) (int, error) {
+	logger := slog.With(slog.String("command", "RegisterUserCommand"), slog.String("username", username))
 	user, err := NewUser(username)
 	if err != nil {
 		err = core.Wrap(err, "error creating user")
-		slog.Warn(err.Error())
+		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	logger := slog.With(slog.String("userId", user.Id.String()))
+	logger = logger.With(slog.String("userId", user.Id.String()))
 	err = user.SetPassword("", password)
 	if err != nil {
 		err = core.Wrap(err, "error setting password")

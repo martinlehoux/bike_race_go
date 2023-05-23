@@ -28,24 +28,6 @@ func isLiteralSelector(node ast.Node, left string, right string) bool {
 	return false
 }
 
-func checkCommandFunc(pass *analysis.Pass, node *ast.FuncDecl) {
-	if node.Type.Results.NumFields() != 2 {
-		pass.Reportf(node.Pos(), "command function must have 2 return value")
-	} else {
-		if !isIdent(node.Type.Results.List[0].Type, "int") {
-			pass.Reportf(node.Pos(), "command function must return an int code as the first return value")
-		}
-		if !isIdent(node.Type.Results.List[1].Type, "error") {
-			pass.Reportf(node.Pos(), "command function must return an error as the second return value")
-		}
-	}
-	if userField := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
-		return isLiteralSelector(field.Type, "auth", "User")
-	}); userField != nil {
-		pass.Reportf(node.Pos(), "command function must not have an auth.User parameter")
-	}
-}
-
 func checkQueryFunc(pass *analysis.Pass, node *ast.FuncDecl) {
 	if node.Type.Results.NumFields() != 3 {
 		pass.Reportf(node.Pos(), "query function must have 3 return values")

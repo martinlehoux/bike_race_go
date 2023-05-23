@@ -12,28 +12,29 @@ import (
 )
 
 func OrganizeRaceCommand(ctx context.Context, conn *pgx.Conn, name string) (int, error) {
+	logger := slog.With(slog.String("command", "OrganizeRaceCommand"))
 	loggedInUser, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
-		slog.Warn(err.Error())
+		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
 	}
 	race, err := NewRace(name)
 	if err != nil {
 		err = core.Wrap(err, "error creating race")
-		slog.Warn(err.Error())
+		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = race.AddOrganizer(loggedInUser)
 	if err != nil {
 		err = core.Wrap(err, "error adding organizer")
-		slog.Warn(err.Error())
+		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = race.Save(ctx, conn)
 	if err != nil {
 		err = core.Wrap(err, "error saving race")
-		slog.Error(err.Error())
+		logger.Error(err.Error())
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusCreated, nil
@@ -80,11 +81,11 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgx.Conn, raceId core.ID
 }
 
 func RegisterForRaceCommand(ctx context.Context, conn *pgx.Conn, raceId core.ID) (int, error) {
-	logger := slog.With(slog.String("raceId", raceId.String()))
+	logger := slog.With(slog.String("command", "RegisterForRaceCommand"), slog.String("raceId", raceId.String()))
 	user, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
-		slog.Warn(err.Error())
+		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
 	}
 	logger = logger.With(slog.String("userId", user.Id.String()))
