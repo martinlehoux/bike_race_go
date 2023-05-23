@@ -9,6 +9,17 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: race_registrations__status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.race_registrations__status AS ENUM (
+    'registered',
+    'submitted',
+    'approved'
+);
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -24,13 +35,14 @@ CREATE TABLE public.race_organizers (
 
 
 --
--- Name: race_registered_users; Type: TABLE; Schema: public; Owner: -
+-- Name: race_registrations; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.race_registered_users (
+CREATE TABLE public.race_registrations (
     race_id uuid NOT NULL,
     user_id uuid NOT NULL,
-    registered_at timestamp with time zone NOT NULL
+    registered_at timestamp with time zone NOT NULL,
+    status public.race_registrations__status NOT NULL
 );
 
 
@@ -76,10 +88,10 @@ ALTER TABLE ONLY public.race_organizers
 
 
 --
--- Name: race_registered_users race_registered_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: race_registrations race_registered_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.race_registered_users
+ALTER TABLE ONLY public.race_registrations
     ADD CONSTRAINT race_registered_users_pkey PRIMARY KEY (race_id, user_id);
 
 
@@ -140,18 +152,18 @@ ALTER TABLE ONLY public.race_organizers
 
 
 --
--- Name: race_registered_users race_registered_users_race_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: race_registrations race_registered_users_race_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.race_registered_users
+ALTER TABLE ONLY public.race_registrations
     ADD CONSTRAINT race_registered_users_race_id_fkey FOREIGN KEY (race_id) REFERENCES public.races(id);
 
 
 --
--- Name: race_registered_users race_registered_users_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: race_registrations race_registered_users_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.race_registered_users
+ALTER TABLE ONLY public.race_registrations
     ADD CONSTRAINT race_registered_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
@@ -169,4 +181,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230505202311'),
     ('20230507193814'),
     ('20230521110535'),
-    ('20230521163127');
+    ('20230521163127'),
+    ('20230523165923'),
+    ('20230523170147');

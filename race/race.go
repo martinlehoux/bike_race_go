@@ -15,7 +15,7 @@ type Race struct {
 	// Registration
 	IsOpenForRegistration bool
 	MaximumParticipants   int
-	RegisteredUsers       []core.ID
+	Registrations         []RaceRegistration
 }
 
 func NewRace(name string) (Race, error) {
@@ -36,13 +36,13 @@ func (race *Race) AddOrganizer(user auth.User) error {
 }
 
 func (race *Race) Register(user auth.User) error {
-	if core.Find(race.RegisteredUsers, func(userId core.ID) bool { return userId == user.Id }) != nil {
+	if core.Find(race.Registrations, func(registration RaceRegistration) bool { return registration.UserId == user.Id }) != nil {
 		return errors.New("user already registered")
 	}
 	if !race.IsOpenForRegistration {
 		return errors.New("registration is closed")
 	}
-	race.RegisteredUsers = append(race.RegisteredUsers, user.Id)
+	race.Registrations = append(race.Registrations, NewRaceRegistration(user.Id))
 	return nil
 }
 
@@ -50,7 +50,7 @@ func (race *Race) OpenForRegistration(maximumParticipants int) error {
 	if maximumParticipants <= 0 {
 		return errors.New("maximum participants must be at least 1")
 	}
-	if len(race.RegisteredUsers) > maximumParticipants {
+	if len(race.Registrations) > maximumParticipants {
 		return errors.New("maximum participants cannot be less than current number of registered users")
 	}
 	race.MaximumParticipants = maximumParticipants

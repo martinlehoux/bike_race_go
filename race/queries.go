@@ -29,7 +29,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 	var hasUserRegisteredSelect string
 	var queryArgs []interface{}
 	if isLoggedIn {
-		hasUserRegisteredSelect = `coalesce(bool_or(race_registered_users.user_id = $1), false)`
+		hasUserRegisteredSelect = `coalesce(bool_or(race_registrations.user_id = $1), false)`
 		queryArgs = append(queryArgs, loggedInUser.Id)
 	} else {
 		hasUserRegisteredSelect = `false`
@@ -38,12 +38,12 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 		SELECT
 			races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants,
 			string_agg(users.username, ', '),
-			count(distinct race_registered_users.user_id) filter (where race_registered_users.user_id is not null),
+			count(distinct race_registrations.user_id) filter (where race_registrations.user_id is not null),
 			%s
 		FROM races
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id
 		LEFT JOIN users ON race_organizers.user_id = users.id
-		LEFT JOIN race_registered_users on races.id = race_registered_users.race_id
+		LEFT JOIN race_registrations on races.id = race_registrations.race_id
 		GROUP BY races.id, races.name
 		`, hasUserRegisteredSelect), queryArgs...)
 	if err != nil {

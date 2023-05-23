@@ -3,26 +3,44 @@ package race
 import (
 	"bike_race/core"
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
 func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error) {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return Race{}, core.Wrap(err, "error beginning transaction")
+	}
 	var race Race
-	err := conn.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 	SELECT
 		races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants,
-		array_agg(race_organizers.user_id) as organizers_ids,
-		array_agg(race_registered_users.user_id) filter (where race_registered_users.user_id is not null) as registered_user_ids
+		array_agg(race_organizers.user_id) as organizers_ids
 	FROM races
 	LEFT JOIN race_organizers ON races.id = race_organizers.race_id
-	LEFT JOIN race_registered_users ON races.id = race_registered_users.race_id
 	WHERE races.id = $1
 	GROUP BY races.id, races.name, races.start_at, races.is_open_for_registration
-	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &race.MaximumParticipants, &race.Organizers, &race.RegisteredUsers)
+	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &race.MaximumParticipants, &race.Organizers)
 	if err != nil {
 		return Race{}, core.Wrap(err, "error selecting races table")
+	}
+	rows, err := tx.Query(ctx, `
+	SELECT user_id, registered_at, status
+	FROM race_registrations
+	WHERE race_id = $1
+	`, raceId)
+	if err != nil {
+		return Race{}, core.Wrap(err, "error selecting race_registrations table")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var registration RaceRegistration
+		err := rows.Scan(&registration.UserId, &registration.RegisteredAt, &registration.Status)
+		if err != nil {
+			return Race{}, core.Wrap(err, "error scanning race_registrations table")
+		}
+		race.Registrations = append(race.Registrations, registration)
 	}
 	return race, nil
 }
@@ -50,14 +68,14 @@ func (race *Race) Save(ctx context.Context, conn *pgx.Conn) error {
 			return core.Wrap(err, "error upserting race_organizers table")
 		}
 	}
-	for _, userId := range race.RegisteredUsers {
+	for _, registration := range race.Registrations {
 		_, err = tx.Exec(ctx, `
-		INSERT INTO race_registered_users (race_id, user_id, registered_at)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (race_id, user_id) DO NOTHING
-		`, race.Id, userId, time.Now())
+		INSERT INTO race_registrations (race_id, user_id, registered_at, status)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (race_id, user_id) DO UPDATE SET registered_at = $3, status = $4
+		`, race.Id, registration.UserId, registration.RegisteredAt, registration.Status)
 		if err != nil {
-			return core.Wrap(err, "error upserting race_registered_users table")
+			return core.Wrap(err, "error upserting race_registrations table")
 		}
 	}
 	return tx.Commit(ctx)
