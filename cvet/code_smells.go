@@ -21,7 +21,7 @@ func isIdent(node ast.Node, name string) bool {
 	return false
 }
 
-func isLiteralSelector(node ast.Node, left string, right string) bool {
+func isSelector(node ast.Node, left string, right string) bool {
 	if selector, ok := node.(*ast.SelectorExpr); ok {
 		return isIdent(selector.X, left) && isIdent(selector.Sel, right)
 	}
@@ -74,6 +74,21 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 					}
 				}
 			}
+			if isSelector(node.Fun, "slog", "With") || isSelector(node.Fun, "logger", "With") {
+				for _, arg := range node.Args {
+					if call, ok := arg.(*ast.CallExpr); ok {
+						if selector, ok := call.Fun.(*ast.SelectorExpr); ok {
+							if ident, ok := selector.X.(*ast.Ident); ok {
+								if ident.Name != "slog" {
+									pass.Reportf(node.Pos(), "slog.With and logger.With must be called with a slog arg")
+								}
+							}
+						}
+					} else {
+						pass.Reportf(node.Pos(), "slog.With and logger.With must be called with a slog arg")
+					}
+				}
+			}
 		case *ast.FuncDecl:
 			if strings.HasSuffix(node.Name.Name, "Query") {
 				checkQueryFunc(pass, node)
@@ -82,7 +97,7 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 				checkCommandFunc(pass, node)
 			}
 			if field := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
-				return isLiteralSelector(field.Type, "context", "Context")
+				return isSelector(field.Type, "context", "Context")
 			}); field != nil {
 				if *field != node.Type.Params.List[0] {
 					pass.Reportf(node.Pos(), "context.Context must be the first parameter")

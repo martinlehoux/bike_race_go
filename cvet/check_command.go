@@ -65,7 +65,7 @@ func checkCommandLogger(pass *analysis.Pass, node *ast.FuncDecl) {
 	}
 
 	call, ok := firstStmt.Rhs[0].(*ast.CallExpr)
-	if !ok || !isLiteralSelector(call.Fun, "slog", "With") {
+	if !ok || !isSelector(call.Fun, "slog", "With") {
 		pass.Reportf(node.Pos(), "logger creation must use slog.With")
 		return
 	}
@@ -88,7 +88,7 @@ func checkCommandFunc(pass *analysis.Pass, node *ast.FuncDecl) {
 		}
 	}
 	if core.Find(node.Type.Params.List, func(field *ast.Field) bool {
-		return isLiteralSelector(field.Type, "auth", "User")
+		return isSelector(field.Type, "auth", "User")
 	}) != nil {
 		pass.Reportf(node.Pos(), "command function must not have an auth.User parameter")
 	}
