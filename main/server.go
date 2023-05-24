@@ -74,6 +74,7 @@ func main() {
 	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
+	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {

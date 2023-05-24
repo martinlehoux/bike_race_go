@@ -1,2 +1,4 @@
 .env
 tmp/
+webapp/node_modules/
+static/index.css

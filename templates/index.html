@@ -1,25 +1,17 @@
 {{ template "layout.html" . }}
 
 {{ define "content" }}
-{{ if .LoggedInUser.Username }}
-<p>Hello {{.LoggedInUser.Username}}</p>
-<form action="/users/log_out" method="post">
-  <input type="submit" value="Log Out" />
-</form>
-{{ else }}
-<form action="/users/register" method="post">
-  <fieldset>
-    <input type="text" name="username" placeholder="Username" />
-    <input type="password" name="password" placeholder="password">
-    <input type="submit" value="Register" />
-  </fieldset>
-</form>
-<form action="/users/log_in" method="post">
-  <fieldset>
-    <input type="text" name="username" placeholder="Username" />
-    <input type="password" name="password" placeholder="password">
-    <input type="submit" value="Log In" />
-  </fieldset>
-</form>
-{{ end }}
+<main class="flex flex-col mx-4 items-center">
+  {{ if .LoggedInUser.Username }}
+  <p>Hello {{.LoggedInUser.Username}}</p>
+  {{ else }}
+  <form action="/users/register" method="post">
+    <fieldset>
+      <input type="text" name="username" placeholder="Username" />
+      <input type="password" name="password" placeholder="password">
+      <input type="submit" value="Register" />
+    </fieldset>
+  </form>
+  {{ end }}
+</main>
 {{ end }}
