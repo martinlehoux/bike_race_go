@@ -1,41 +1,55 @@
 {{template "layout.html" . }}
 
 {{ define "content" }}
-<h1>{{.Race.Name}}</h1>
+<main class="flex flex-col mx-4 items-center">
+  <h1 class="text-xl font-bold text-blue-900 mt-4">{{.Race.Name}}</h1>
 
-{{if .Race.CanOpenForRegistration}}
-<form action="/races/{{.Race.Id.String}}/open_for_registration" method="post">
-  <fieldset>
-    <input type="datetime-local" name="start_at" {{if not
-      .Race.StartAt.IsZero}}value="{{.Race.StartAt.Format `2006-01-02T15:04`}}" {{end}} />
-    <label for="maximum_participants">Maximum participants</label>
-    <input type="number" name="maximum_participants" id="maximum_participants" min="1"
-      value="{{.Race.MaximumParticipants}}">
-    <input type="submit" value="Open for registration">
-  </fieldset>
-</form>
-{{ end }}
+  {{if .Race.CanOpenForRegistration}}
+  <form action="/races/{{.Race.Id.String}}/open_for_registration" method="post"
+    class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4">
+    <div class="flex flex-row justify-between">
+      <label for="start_at">Race start</label>
+      <input type="datetime-local" id="start_at" name="start_at" class="border px-2 py-1 rounded" {{if not
+        .Race.StartAt.IsZero}}value="{{.Race.StartAt.Format `2006-01-02T15:04`}}" {{end}} />
+    </div>
+    <div class="flex flex-row justify-between">
+      <label for="maximum_participants">Maximum participants</label>
+      <input type="number" name="maximum_participants" id="maximum_participants" min="1"
+        class="border px-2 py-1 rounded" value="{{.Race.MaximumParticipants}}">
+    </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>User</th>
-      <th>Registration date</th>
-      <th>Status</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {{range .RaceRegistrations}}
-    <tr>
-      <td>{{.Username}}</td>
-      <td>{{.RegisteredAt}}</td>
-      <td>{{.Status}}</td>
-      <td>{{if $.Race.CanAcceptRegistrations}}<form
-          action="/races/{{$.Race.Id.String}}/registrations/{{.UserId.String}}/approve" method="post"><input
-            type="submit" value="Approve"></form>{{end}}</td>
-    </tr>
-    {{end}}
-  </tbody>
-</table>
+    <input type="submit" value="Open for registration" class="btn-primary">
+  </form>
+  {{ end }}
+
+  <table class="mt-6 max-w-screen-xl w-full table-auto">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Registration date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .RaceRegistrations}}
+      <tr>
+        <td>{{.Username}}</td>
+        <td>{{.RegisteredAt}}</td>
+        <td><span class="chip bg-green-900">{{.Status}}</span></td>
+        <td>
+          {{if $.Race.CanAcceptRegistrations}}
+          <form action="/races/{{$.Race.Id.String}}/registrations/{{.UserId.String}}/approve" method="post">
+            <input type="submit" value="Approve" class="btn-primary">
+          </form>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</main>
+
+
+
 {{ end }}

@@ -9,8 +9,11 @@
 }
 
 @layer components {
+  .chip {
+    @apply rounded px-2 py-1 text-white font-bold 
+  }
   .btn-primary {
-    @apply rounded bg-blue-900 px-2 text-white font-bold cursor-pointer hover:bg-blue-700
+    @apply chip bg-blue-900 cursor-pointer hover:bg-blue-700
   }
 }
 
