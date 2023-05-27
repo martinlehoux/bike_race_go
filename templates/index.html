@@ -6,11 +6,9 @@
   <p>Hello {{.LoggedInUser.Username}}</p>
   {{ else }}
   <form action="/users/register" method="post">
-    <fieldset>
-      <input type="text" name="username" placeholder="Username" />
-      <input type="password" name="password" placeholder="password">
-      <input type="submit" value="Register" />
-    </fieldset>
+    <input type="text" name="username" placeholder="Username" />
+    <input type="password" name="password" placeholder="password">
+    <input type="submit" value="Register" />
   </form>
   {{ end }}
 </main>

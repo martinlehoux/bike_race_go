@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  form {
+    margin: 0;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply rounded bg-blue-900 px-2 text-white font-bold cursor-pointer hover:bg-blue-700
+  }
+}
+

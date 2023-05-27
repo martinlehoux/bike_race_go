@@ -8,15 +8,14 @@
     <div class="flex flex-row">
       {{if .LoggedInUser.Username}}
       <a href="/users/me" class="px-4 py-2 hover:bg-blue-700">Profile</a>
-      <form action="/users/log_out" method="post" class="m-0">
+      <form action="/users/log_out" method="post">
         <input type="submit" value="Log Out" class="px-4 py-2 hover:bg-blue-700 cursor-pointer" />
       </form>
       {{else}}
-      <form action="/users/log_in" method="post" class="flex flex-row items-center m-0 px-4 gap-2">
+      <form action="/users/log_in" method="post" class="flex flex-row items-center px-4 gap-2">
         <input type="text" name="username" placeholder="Username" class="rounded px-2" />
         <input type="password" name="password" placeholder="password" class="rounded px-2">
-        <input type="submit" value="Log In"
-          class="rounded bg-blue-900 px-2 text-white font-bold cursor-pointer hover:bg-blue-700" />
+        <input type="submit" value="Log In" class="btn-primary" />
       </form>
       {{end}}
     </div>
