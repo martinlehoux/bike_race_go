@@ -5,11 +5,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
 )
 
-func RegisterUserCommand(ctx context.Context, conn *pgx.Conn, username string, password string) (int, error) {
+func RegisterUserCommand(ctx context.Context, conn *pgxpool.Pool, username string, password string) (int, error) {
 	logger := slog.With(slog.String("command", "RegisterUserCommand"), slog.String("username", username))
 	user, err := NewUser(username)
 	if err != nil {

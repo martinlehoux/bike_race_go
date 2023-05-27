@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
 )
 
@@ -22,7 +22,7 @@ func Unauthorized(w http.ResponseWriter, err error) {
 	}
 }
 
-func CookieAuthMiddleware(conn *pgx.Conn, secret []byte) func(http.Handler) http.Handler {
+func CookieAuthMiddleware(conn *pgxpool.Pool, secret []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()

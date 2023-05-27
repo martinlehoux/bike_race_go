@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type RaceListModel struct {
@@ -20,11 +21,12 @@ type RaceListModel struct {
 	Organizers            string
 	RegisteredCount       int
 	MaximumParticipants   int
+	CoverImage            string
 	// Permissions
 	CanRegister bool
 }
 
-func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, error) {
+func RaceListQuery(ctx context.Context, conn *pgxpool.Pool) ([]RaceListModel, int, error) {
 	loggedInUser, isLoggedIn := auth.UserFromContext(ctx)
 	var hasUserRegisteredSelect string
 	var queryArgs []interface{}
@@ -36,7 +38,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 	}
 	rows, err := conn.Query(ctx, fmt.Sprintf(`
 		SELECT
-			races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants,
+			races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants, coalesce(races.cover_image_id::text, ''),
 			string_agg(users.username, ', '),
 			count(distinct race_registrations.user_id) filter (where race_registrations.user_id is not null),
 			%s
@@ -55,7 +57,7 @@ func RaceListQuery(ctx context.Context, conn *pgx.Conn) ([]RaceListModel, int, e
 	for rows.Next() {
 		var hasUserRegistered bool
 		var row RaceListModel
-		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.Organizers, &row.RegisteredCount, &hasUserRegistered)
+		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.CoverImage, &row.Organizers, &row.RegisteredCount, &hasUserRegistered)
 		if err != nil {
 			err = core.Wrap(err, "error scanning races")
 			panic(err)
@@ -73,11 +75,12 @@ type RaceDetailModel struct {
 	MaximumParticipants   int
 	StartAt               time.Time
 	// Permissions
+	CanUpdateDescription   bool
 	CanOpenForRegistration bool
 	CanAcceptRegistrations bool
 }
 
-func RaceDetailQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID, loggedInUser auth.User) (RaceDetailModel, int, error) {
+func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, loggedInUser auth.User) (RaceDetailModel, int, error) {
 	var race RaceDetailModel
 	var isLoggedInUserOrganizer bool
 	err := conn.QueryRow(ctx, `
@@ -89,8 +92,9 @@ func RaceDetailQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID, logged
 		WHERE races.id = $1
 		GROUP BY races.id, races.name
 		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &isLoggedInUserOrganizer)
-	race.CanOpenForRegistration = isLoggedInUserOrganizer
+	race.CanOpenForRegistration = isLoggedInUserOrganizer && race.IsOpenForRegistration
 	race.CanAcceptRegistrations = isLoggedInUserOrganizer
+	race.CanUpdateDescription = isLoggedInUserOrganizer
 	if err == pgx.ErrNoRows {
 		err = errors.New("race not found")
 		return race, http.StatusNotFound, err
@@ -108,7 +112,7 @@ type RaceRegistrationModel struct {
 	RegisteredAt time.Time
 }
 
-func RaceRegistrationsQuery(ctx context.Context, conn *pgx.Conn, raceId core.ID) ([]RaceRegistrationModel, int, error) {
+func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) ([]RaceRegistrationModel, int, error) {
 	var registrations []RaceRegistrationModel
 	rows, err := conn.Query(ctx, `
 		SELECT

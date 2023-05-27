@@ -6,9 +6,10 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func LoadUser(ctx context.Context, conn *pgx.Conn, userId core.ID) (User, error) {
+func LoadUser(ctx context.Context, conn *pgxpool.Pool, userId core.ID) (User, error) {
 	var user User
 	err := conn.QueryRow(ctx, `
 		SELECT id, username, password_hash
@@ -23,7 +24,7 @@ func LoadUser(ctx context.Context, conn *pgx.Conn, userId core.ID) (User, error)
 	return user, nil
 }
 
-func (user *User) Save(ctx context.Context, conn *pgx.Conn) error {
+func (user *User) Save(ctx context.Context, conn *pgxpool.Pool) error {
 	_, err := conn.Exec(ctx, `
 		INSERT INTO users (id, username, password_hash)
 		VALUES ($1, $2, $3)

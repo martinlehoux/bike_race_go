@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/exp/slog"
 )
@@ -48,16 +48,15 @@ func loadCookieSecret() []byte {
 	return cookiesSecret
 }
 
-func connectDatabase() *pgx.Conn {
-	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+func connectDatabase(ctx context.Context) *pgxpool.Pool {
+	pool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		err = core.Wrap(err, "error connecting to database")
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 	slog.Info("connected to database")
-	return conn
+	return pool
 }
 
 func main() {
@@ -65,8 +64,8 @@ func main() {
 	ctx := context.Background()
 	loadEnv()
 	cookiesSecret := loadCookieSecret()
-	conn := connectDatabase()
-	defer conn.Close(ctx)
+	conn := connectDatabase(ctx)
+	defer conn.Close()
 	baseTpl := template.Must(template.ParseGlob("templates/base/*.html"))
 
 	router := chi.NewRouter()
@@ -75,6 +74,7 @@ func main() {
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	router.Handle("/media/*", http.StripPrefix("/media/", http.FileServer(http.Dir("media"))))
 
 	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {

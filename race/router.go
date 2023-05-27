@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
 )
 
@@ -26,7 +26,7 @@ type RaceTemplateData struct {
 	RaceRegistrations []RaceRegistrationModel
 }
 
-func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
+func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
@@ -120,6 +120,33 @@ func Router(conn *pgx.Conn, baseTpl *template.Template) chi.Router {
 		} else {
 			http.Redirect(w, r, fmt.Sprintf("/races/%s", raceId.String()), http.StatusSeeOther)
 		}
+	})
+
+	router.Post("/{raceId}/update_description", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		coverImageFile, handler, err := r.FormFile("cover_image")
+		if err != nil {
+			err = core.Wrap(err, "error parsing cover_image")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer coverImageFile.Close()
+		slog.Info("received cover_image", slog.String("type", handler.Header.Get("Content-Type")), slog.Int64("size", handler.Size))
+		code, err := UpdateRaceDescriptionCommand(ctx, conn, raceId, coverImageFile)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("/races/%s", raceId.String()), http.StatusSeeOther)
 	})
 
 	router.Post("/{raceId}/register", func(w http.ResponseWriter, r *http.Request) {

@@ -12,6 +12,8 @@ type Race struct {
 	Name       string
 	Organizers []core.ID
 	StartAt    time.Time
+	// Description
+	CoverImage *core.Image
 	// Registration
 	IsOpenForRegistration bool
 	MaximumParticipants   int
@@ -75,4 +77,8 @@ func (race *Race) ApproveRegistration(userId core.ID) error {
 
 func (race Race) CanAcceptRegistration(user auth.User) bool {
 	return race.IsOpenForRegistration && core.Find(race.Organizers, func(id core.ID) bool { return id == user.Id }) != nil
+}
+
+func (race Race) CanUpdateDescription(user auth.User) bool {
+	return core.Find(race.Organizers, func(id core.ID) bool { return id == user.Id }) != nil
 }

@@ -22,6 +22,18 @@
   </form>
   {{ end }}
 
+  {{if .Race.CanUpdateDescription}}
+  <form action="/races/{{.Race.Id.String}}/update_description" method="post" enctype="multipart/form-data"
+    class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4">
+    <div class="flex flex-row justify-between">
+      <label for="cover_image">Cover image</label>
+      <input type="file" name="cover_image" id="cover_image" />
+    </div>
+
+    <input type="submit" value="Update description" class="btn-primary">
+  </form>
+  {{end}}
+
   <table class="mt-6 max-w-screen-xl w-full table-auto">
     <thead>
       <tr>

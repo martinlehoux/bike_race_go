@@ -4,10 +4,10 @@ import (
 	"bike_race/core"
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error) {
+func LoadRace(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (Race, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return Race{}, core.Wrap(err, "error beginning transaction")
@@ -15,13 +15,13 @@ func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error)
 	var race Race
 	err = tx.QueryRow(ctx, `
 	SELECT
-		races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants,
+		races.id, races.name, races.start_at, races.is_open_for_registration, races.maximum_participants, races.cover_image_id,
 		array_agg(race_organizers.user_id) as organizers_ids
 	FROM races
 	LEFT JOIN race_organizers ON races.id = race_organizers.race_id
 	WHERE races.id = $1
 	GROUP BY races.id, races.name, races.start_at, races.is_open_for_registration
-	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &race.MaximumParticipants, &race.Organizers)
+	`, raceId).Scan(&race.Id, &race.Name, &race.StartAt, &race.IsOpenForRegistration, &race.MaximumParticipants, &race.CoverImage, &race.Organizers)
 	if err != nil {
 		return Race{}, core.Wrap(err, "error selecting races table")
 	}
@@ -46,16 +46,16 @@ func LoadRace(ctx context.Context, conn *pgx.Conn, raceId core.ID) (Race, error)
 	return race, nil
 }
 
-func (race *Race) Save(ctx context.Context, conn *pgx.Conn) error {
+func (race *Race) Save(ctx context.Context, conn *pgxpool.Pool) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return core.Wrap(err, "error beginning transaction")
 	}
 	_, err = tx.Exec(ctx, `
-	INSERT INTO races (id, name, start_at, is_open_for_registration, maximum_participants)
-	VALUES ($1, $2, $3, $4, $5)
-	ON CONFLICT (id) DO UPDATE SET name = $2, start_at = $3, is_open_for_registration = $4, maximum_participants = $5
-	`, race.Id, race.Name, race.StartAt, race.IsOpenForRegistration, race.MaximumParticipants)
+	INSERT INTO races (id, name, start_at, is_open_for_registration, maximum_participants, cover_image_id)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	ON CONFLICT (id) DO UPDATE SET name = $2, start_at = $3, is_open_for_registration = $4, maximum_participants = $5, cover_image_id = $6
+	`, race.Id, race.Name, race.StartAt, race.IsOpenForRegistration, race.MaximumParticipants, race.CoverImage)
 	if err != nil {
 		return core.Wrap(err, "error userting race table")
 	}

@@ -11,11 +11,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slog"
 )
 
-func AuthenticateUser(ctx context.Context, conn *pgx.Conn, username string, password string) (User, int, error) {
+func AuthenticateUser(ctx context.Context, conn *pgxpool.Pool, username string, password string) (User, int, error) {
 	slog.Info("Authenticating user", slog.String("username", username))
 	var user User
 	err := conn.QueryRow(ctx, `
@@ -50,7 +51,7 @@ type UsersTemplateData struct {
 	Users        []UserListModel
 }
 
-func Router(conn *pgx.Conn, baseTpl *template.Template, cookiesSecret []byte) chi.Router {
+func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte) chi.Router {
 	router := chi.NewRouter()
 
 	userListTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))
