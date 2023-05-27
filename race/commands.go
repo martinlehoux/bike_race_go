@@ -151,7 +151,7 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	return http.StatusOK, nil
 }
 
-func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, coverImageFile multipart.File) (int, error) {
+func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, clearCoverImage bool, coverImageFile multipart.File) (int, error) {
 	logger := slog.With(slog.String("command", "UpdateRaceDescriptionCommand"), slog.String("raceId", raceId.String()))
 	logger.Info("updating race description")
 	loggedInUser, ok := auth.UserFromContext(ctx)
@@ -172,22 +172,28 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
 	}
-	coverImage := core.NewImage()
-	err = coverImage.Save(coverImageFile)
-	if err != nil {
-		err = core.Wrap(err, "error saving cover_image")
-		logger.Warn(err.Error())
-		return http.StatusBadRequest, err
-	}
-	if race.CoverImage != nil {
+
+	if clearCoverImage && race.CoverImage != nil {
 		err = race.CoverImage.Delete()
 		if err != nil {
 			err = core.Wrap(err, "error deleting old cover_image")
 			logger.Warn(err.Error())
 			return http.StatusBadRequest, err
 		}
+		race.CoverImage = nil
 	}
-	race.CoverImage = &coverImage
+
+	if coverImageFile != nil {
+		coverImage := core.NewImage()
+		err = coverImage.Save(coverImageFile)
+		if err != nil {
+			err = core.Wrap(err, "error saving cover_image")
+			logger.Warn(err.Error())
+			return http.StatusBadRequest, err
+		}
+		race.CoverImage = &coverImage
+	}
+
 	err = race.Save(ctx, conn)
 	if err != nil {
 		panic(err)

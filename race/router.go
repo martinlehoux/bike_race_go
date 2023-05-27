@@ -131,16 +131,18 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		coverImageFile, handler, err := r.FormFile("cover_image")
-		if err != nil {
+		clearCoverImage := r.FormValue("clear_cover_image")
+		coverImageFile, _, err := r.FormFile("cover_image")
+		if err != nil && err != http.ErrMissingFile {
 			err = core.Wrap(err, "error parsing cover_image")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer coverImageFile.Close()
-		slog.Info("received cover_image", slog.String("type", handler.Header.Get("Content-Type")), slog.Int64("size", handler.Size))
-		code, err := UpdateRaceDescriptionCommand(ctx, conn, raceId, coverImageFile)
+		if coverImageFile != nil {
+			defer coverImageFile.Close()
+		}
+		code, err := UpdateRaceDescriptionCommand(ctx, conn, raceId, coverImageFile != nil || clearCoverImage == "on", coverImageFile)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
