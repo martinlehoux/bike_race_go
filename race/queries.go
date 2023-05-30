@@ -74,6 +74,7 @@ type RaceDetailModel struct {
 	IsOpenForRegistration bool
 	MaximumParticipants   int
 	StartAt               time.Time
+	CoverImage            string
 	// Permissions
 	CanUpdateDescription   bool
 	CanOpenForRegistration bool
@@ -85,13 +86,13 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, lo
 	var isLoggedInUserOrganizer bool
 	err := conn.QueryRow(ctx, `
 		SELECT
-			races.id, races.name, races.maximum_participants, races.is_open_for_registration, races.start_at,
+			races.id, races.name, races.maximum_participants, races.is_open_for_registration, races.start_at, coalesce(races.cover_image_id::text, ''),
 			$2::UUID IS NOT NULL AND bool_or(race_organizers.user_id = $2)
 		FROM races
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id 
 		WHERE races.id = $1
 		GROUP BY races.id, races.name
-		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &isLoggedInUserOrganizer)
+		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &race.CoverImage, &isLoggedInUserOrganizer)
 	race.CanOpenForRegistration = isLoggedInUserOrganizer && race.IsOpenForRegistration
 	race.CanAcceptRegistrations = isLoggedInUserOrganizer
 	race.CanUpdateDescription = isLoggedInUserOrganizer
