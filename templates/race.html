@@ -59,7 +59,7 @@
       {{range .Data.RaceRegistrations}}
       <tr>
         <td>{{.Username}}</td>
-        <td>{{.RegisteredAt}}</td>
+        <td>{{.RegisteredAt.Format "Monday, January 2, 2006 at 15:04"}}</td>
         <td><span class="chip bg-green-700">{{.Status}}</span></td>
         <td>
           {{if $.Data.Race.CanAcceptRegistrations}}

@@ -23,7 +23,7 @@
           {{ if .StartAt.IsZero }}
           {{ call $.T "raceStart_notChosen" }}
           {{else}}
-          {{ call $.T "raceStart_chosen" .StartAt }}
+          {{ call $.T "raceStart_chosen" (.StartAt.Format "Monday, January 2, 2006 at 15:04") }}
           {{end}}
         </span>
         <span>{{.Organizers}}</span>
