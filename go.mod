@@ -8,6 +8,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/kataras/i18n v0.0.8
+	github.com/samber/lo v1.38.1
 	golang.org/x/crypto v0.8.0
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	golang.org/x/tools v0.9.1

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bike_race/core"
 	"go/ast"
 	"strings"
 
+	"github.com/samber/lo"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -96,10 +96,10 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 			if strings.HasSuffix(node.Name.Name, "Command") {
 				checkCommandFunc(pass, node)
 			}
-			if field := core.Find(node.Type.Params.List, func(field *ast.Field) bool {
+			if field, ok := lo.Find(node.Type.Params.List, func(field *ast.Field) bool {
 				return isSelector(field.Type, "context", "Context")
-			}); field != nil {
-				if *field != node.Type.Params.List[0] {
+			}); ok {
+				if field != node.Type.Params.List[0] {
 					pass.Reportf(node.Pos(), "context.Context must be the first parameter")
 				}
 				if (*field).Names[0].Name != "ctx" {

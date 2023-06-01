@@ -34,12 +34,3 @@ func ParseID(value string) (ID, error) {
 	}
 	return ID{id}, nil
 }
-
-func Find[V any](slice []V, find func(V) bool) *V {
-	for _, v := range slice {
-		if find(v) {
-			return &v
-		}
-	}
-	return nil
-}

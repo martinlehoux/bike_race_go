@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
 
@@ -60,7 +61,7 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 		panic(err)
 	}
 
-	if org := core.Find(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }); org == nil {
+	if !lo.ContainsBy(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err

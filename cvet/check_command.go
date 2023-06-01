@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bike_race/core"
 	"fmt"
 	"go/ast"
 	"go/token"
 
+	"github.com/samber/lo"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -69,7 +69,7 @@ func checkCommandLogger(pass *analysis.Pass, node *ast.FuncDecl) {
 		pass.Reportf(node.Pos(), "logger creation must use slog.With")
 		return
 	}
-	if core.Find(call.Args, loggerCommandKeyValueArgFinder(pass, commandName)) == nil {
+	if !lo.ContainsBy(call.Args, loggerCommandKeyValueArgFinder(pass, commandName)) {
 		pass.Reportf(node.Pos(), "logger creation must contain command arg")
 	}
 
@@ -87,9 +87,9 @@ func checkCommandFunc(pass *analysis.Pass, node *ast.FuncDecl) {
 			pass.Reportf(node.Pos(), "command function must return an error as the second return value")
 		}
 	}
-	if core.Find(node.Type.Params.List, func(field *ast.Field) bool {
+	if lo.ContainsBy(node.Type.Params.List, func(field *ast.Field) bool {
 		return isSelector(field.Type, "auth", "User")
-	}) != nil {
+	}) {
 		pass.Reportf(node.Pos(), "command function must not have an auth.User parameter")
 	}
 	checkCommandLogger(pass, node)

@@ -5,6 +5,8 @@ import (
 	"bike_race/core"
 	"errors"
 	"time"
+
+	"github.com/samber/lo"
 )
 
 type Race struct {
@@ -76,9 +78,9 @@ func (race *Race) ApproveRegistration(userId core.ID) error {
 }
 
 func (race Race) CanAcceptRegistration(user auth.User) bool {
-	return race.IsOpenForRegistration && core.Find(race.Organizers, func(id core.ID) bool { return id == user.Id }) != nil
+	return race.IsOpenForRegistration && lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
 }
 
 func (race Race) CanUpdateDescription(user auth.User) bool {
-	return core.Find(race.Organizers, func(id core.ID) bool { return id == user.Id }) != nil
+	return lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
 }
