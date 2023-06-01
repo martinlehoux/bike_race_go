@@ -27,6 +27,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte
 	router.Post("/log_in", logInRoute(conn, cookiesSecret))
 	router.Post("/log_out", logOutRoute())
 
+	router.Get("/me", viewUserMeRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/me.html"))))
 	router.Get("/", viewUsersRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))))
 
 	return router
@@ -47,6 +48,23 @@ func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc
 		}
 		data.Data.Users = users
 		err = tpl.ExecuteTemplate(w, "users.html", data)
+		if err != nil {
+			err = core.Wrap(err, "error executing template")
+			slog.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func viewUserMeRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data := GetTemplateData(r, struct{}{})
+		if !data.Ok {
+			Unauthorized(w, errors.New("not authenticated"))
+			return
+		}
+		err := tpl.ExecuteTemplate(w, "me.html", data)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			slog.Error(err.Error())

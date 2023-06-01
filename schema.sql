@@ -76,7 +76,8 @@ CREATE TABLE public.schema_migrations (
 CREATE TABLE public.users (
     id uuid NOT NULL,
     username character varying(255) NOT NULL,
-    password_hash bytea NOT NULL
+    password_hash bytea NOT NULL,
+    language character varying(10) NOT NULL
 );
 
 
@@ -185,4 +186,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230521163127'),
     ('20230523165923'),
     ('20230523170147'),
-    ('20230527172746');
+    ('20230527172746'),
+    ('20230601171320');

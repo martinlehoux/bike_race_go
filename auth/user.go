@@ -11,6 +11,7 @@ type User struct {
 	Id           core.ID
 	Username     string
 	PasswordHash []byte
+	Language     string
 }
 
 func NewUser(username string) (User, error) {
@@ -20,6 +21,7 @@ func NewUser(username string) (User, error) {
 	}
 	user.Id = core.NewID()
 	user.Username = username
+	user.Language = "en"
 	return user, nil
 }
 

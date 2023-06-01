@@ -25,3 +25,7 @@ usersNavLink: Users
 profileNavLink: Profile
 logOutButton: Log out
 logInButton: Log in
+profile: Profile
+language: Language
+language_en: English
+language_fr: Français
