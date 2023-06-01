@@ -15,15 +15,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type RacesTemplateData struct {
-	Races []RaceListModel
-}
-
-type RaceTemplateData struct {
-	Race              RaceDetailModel
-	RaceRegistrations []RaceRegistrationModel
-}
-
 func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
@@ -45,6 +36,11 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 	return router
 }
 
+type RaceTemplateData struct {
+	Race              RaceDetailModel
+	RaceRegistrations []RaceRegistrationModel
+}
+
 func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := auth.GetTemplateData(r, RaceTemplateData{})
@@ -61,7 +57,7 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			return
 		}
 		data.Data.Race = raceDetail
-		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId)
+		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId, data.Data.Race.Permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -69,6 +65,10 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 		data.Data.RaceRegistrations = raceRegistrations
 		core.Expect(tpl.ExecuteTemplate(w, "race.html", data), "error executing template")
 	}
+}
+
+type RacesTemplateData struct {
+	Races []RaceListModel
 }
 
 func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {

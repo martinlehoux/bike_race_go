@@ -124,7 +124,7 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	}
 	core.Expect(err, "")
 
-	if !race.CanAcceptRegistration(currentUser) {
+	if !race.CanApproveRegistration(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err

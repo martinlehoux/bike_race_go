@@ -77,7 +77,7 @@ func (race *Race) ApproveRegistration(userId core.ID) error {
 	return nil
 }
 
-func (race Race) CanAcceptRegistration(user auth.User) bool {
+func (race Race) CanApproveRegistration(user auth.User) bool {
 	return race.IsOpenForRegistration && lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
 }
 

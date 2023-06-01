@@ -5,7 +5,7 @@
   <h1 class="text-xl font-bold text-blue-900 mt-4">{{.Data.Race.Name}}</h1>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 justify-start">
-    {{if .Data.Race.CanOpenForRegistration}}
+    {{if .Data.Race.Permissions.CanOpenForRegistration}}
     <form action="/races/{{.Data.Race.Id.String}}/open_for_registration" method="post"
       class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4 h-max">
       <div class="flex flex-col lg:flex-row justify-between">
@@ -23,7 +23,7 @@
     </form>
     {{ end }}
 
-    {{if .Data.Race.CanUpdateDescription}}
+    {{if .Data.Race.Permissions.CanUpdateDescription}}
     <form action="/races/{{.Data.Race.Id.String}}/update_description" method="post" enctype="multipart/form-data"
       class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4">
       <div class="aspect-video w-full flex justify-center">
@@ -62,7 +62,7 @@
         <td>{{.RegisteredAt.Format "Monday, January 2, 2006 at 15:04"}}</td>
         <td><span class="chip bg-green-700">{{.Status}}</span></td>
         <td>
-          {{if $.Data.Race.CanAcceptRegistrations}}
+          {{if .Permissions.CanApprove}}
           <form action="/races/{{$.Data.Race.Id.String}}/registrations/{{.UserId.String}}/approve" method="post">
             <input type="submit" value={{ call $.T "approveButton" }} class="btn-primary">
           </form>

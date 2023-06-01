@@ -62,6 +62,12 @@ func RaceListQuery(ctx context.Context, conn *pgxpool.Pool) ([]RaceListModel, in
 	return races, http.StatusOK, nil
 }
 
+type RacePermissionsModel struct {
+	CanUpdateDescription    bool
+	CanOpenForRegistration  bool
+	CanApproveRegistrations bool
+}
+
 type RaceDetailModel struct {
 	Id                    core.ID
 	Name                  string
@@ -69,10 +75,7 @@ type RaceDetailModel struct {
 	MaximumParticipants   int
 	StartAt               time.Time
 	CoverImage            string
-	// Permissions
-	CanUpdateDescription   bool
-	CanOpenForRegistration bool
-	CanAcceptRegistrations bool
+	Permissions           RacePermissionsModel
 }
 
 func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (RaceDetailModel, int, error) {
@@ -88,9 +91,11 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 		WHERE races.id = $1
 		GROUP BY races.id, races.name
 		`, raceId, currentUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &race.CoverImage, &isCurrentUserOrganizer)
-	race.CanOpenForRegistration = isCurrentUserOrganizer && race.IsOpenForRegistration
-	race.CanAcceptRegistrations = isCurrentUserOrganizer
-	race.CanUpdateDescription = isCurrentUserOrganizer
+	race.Permissions = RacePermissionsModel{
+		CanOpenForRegistration:  isCurrentUserOrganizer && race.IsOpenForRegistration,
+		CanApproveRegistrations: isCurrentUserOrganizer,
+		CanUpdateDescription:    isCurrentUserOrganizer,
+	}
 	if err == pgx.ErrNoRows {
 		err = errors.New("race not found")
 		return race, http.StatusNotFound, err
@@ -100,14 +105,19 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 	return race, http.StatusOK, nil
 }
 
+type RaceRegistrationPermissionsModel struct {
+	CanApprove bool
+}
+
 type RaceRegistrationModel struct {
 	UserId       core.ID
 	Username     string
 	Status       RaceRegistrationStatus
 	RegisteredAt time.Time
+	Permissions  RaceRegistrationPermissionsModel
 }
 
-func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) ([]RaceRegistrationModel, int, error) {
+func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, racePermissions RacePermissionsModel) ([]RaceRegistrationModel, int, error) {
 	var registrations []RaceRegistrationModel
 	rows, err := conn.Query(ctx, `
 		SELECT
@@ -126,6 +136,9 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 	for rows.Next() {
 		var registration RaceRegistrationModel
 		core.Expect(rows.Scan(&registration.UserId, &registration.Status, &registration.RegisteredAt, &registration.Username), "error scanning race_registrations")
+		registration.Permissions = RaceRegistrationPermissionsModel{
+			CanApprove: racePermissions.CanApproveRegistrations && registration.Status == Registered,
+		}
 		registrations = append(registrations, registration)
 	}
 	return registrations, http.StatusOK, nil
