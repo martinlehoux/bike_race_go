@@ -29,3 +29,4 @@ profile: Profile
 language: Language
 language_en: English
 language_fr: Français
+notFound: This is not the page you are looking for

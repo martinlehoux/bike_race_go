@@ -83,6 +83,12 @@ func main() {
 	router.Mount("/users", auth.Router(conn, baseTpl, cookiesSecret))
 	router.Mount("/races", race.Router(conn, baseTpl))
 
+	tpl404 := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/404.html"))
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		data := auth.GetTemplateData(r, struct{}{})
+		core.Expect(tpl404.ExecuteTemplate(w, "404.html", data), "error executing template")
+	})
+
 	slog.Info("listening on http://localhost:3000")
 	http.ListenAndServe(":3000", router)
 }
