@@ -13,7 +13,7 @@ type TemplateData[T any] struct {
 	Data        T
 }
 
-func Data[T any](r *http.Request, data T) TemplateData[T] {
+func GetTemplateData[T any](r *http.Request, data T) TemplateData[T] {
 	user, ok := UserFromContext(r.Context())
 	lang := "en"
 	return TemplateData[T]{

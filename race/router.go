@@ -47,7 +47,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 
 func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data := auth.Data(r, RaceTemplateData{})
+		data := auth.GetTemplateData(r, RaceTemplateData{})
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
@@ -78,7 +78,7 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		data := auth.Data(r, RacesTemplateData{})
+		data := auth.GetTemplateData(r, RacesTemplateData{})
 		races, code, err := RaceListQuery(ctx, conn)
 		if err != nil {
 			http.Error(w, err.Error(), code)

@@ -35,7 +35,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte
 func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		data := Data(r, UsersTemplateData{})
+		data := GetTemplateData(r, UsersTemplateData{})
 		if !data.Ok {
 			Unauthorized(w, errors.New("not authenticated"))
 			return
