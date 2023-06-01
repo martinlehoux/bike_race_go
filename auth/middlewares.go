@@ -30,10 +30,9 @@ func CookieAuthMiddleware(conn *pgxpool.Pool, secret []byte) func(http.Handler) 
 			if err == http.ErrNoCookie {
 				next.ServeHTTP(w, r)
 				return
-			} else if err != nil {
-				err = core.Wrap(err, "error reading cookie")
-				panic(err)
 			}
+			core.Expect(err, "error reading cookie")
+
 			authentication, err := decrypt(secret, cookie.Value)
 			if err != nil {
 				err = core.Wrap(err, "error decrypting cookie")
@@ -70,10 +69,8 @@ func CookieAuthMiddleware(conn *pgxpool.Pool, secret []byte) func(http.Handler) 
 				return
 			}
 			user, err := LoadUser(ctx, conn, userId)
-			if err != nil {
-				err = core.Wrap(err, "error loading user")
-				panic(err)
-			}
+			core.Expect(err, "error loading user")
+
 			ctx = context.WithValue(ctx, userContext{}, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

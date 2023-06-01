@@ -67,11 +67,7 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			return
 		}
 		data.Data.RaceRegistrations = raceRegistrations
-		err = tpl.ExecuteTemplate(w, "race.html", data)
-		if err != nil {
-			err = core.Wrap(err, "error executing template")
-			panic(err)
-		}
+		core.Expect(tpl.ExecuteTemplate(w, "race.html", data), "error executing template")
 	}
 }
 
@@ -85,11 +81,7 @@ func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerF
 			return
 		}
 		data.Data.Races = races
-		err = tpl.ExecuteTemplate(w, "races.html", data)
-		if err != nil {
-			err = core.Wrap(err, "error executing template")
-			panic(err)
-		}
+		core.Expect(tpl.ExecuteTemplate(w, "races.html", data), "error executing template")
 	}
 }
 

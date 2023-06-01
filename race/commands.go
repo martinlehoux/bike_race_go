@@ -57,9 +57,8 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
-	} else if err != nil {
-		panic(err)
 	}
+	core.Expect(err, "")
 
 	if !lo.ContainsBy(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }) {
 		err = errors.New("user not an organizer")
@@ -74,10 +73,7 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 		return http.StatusBadRequest, err
 	}
 
-	err = race.Save(ctx, conn)
-	if err != nil {
-		panic(err)
-	}
+	core.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("race opened for registration")
 	return http.StatusOK, nil
@@ -96,9 +92,8 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
-	} else if err != nil {
-		panic(err)
 	}
+	core.Expect(err, "")
 
 	err = race.Register(user)
 	if err != nil {
@@ -107,10 +102,7 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core
 		return http.StatusBadRequest, err
 	}
 
-	err = race.Save(ctx, conn)
-	if err != nil {
-		panic(err)
-	}
+	core.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registered to race")
 	return http.StatusOK, nil
@@ -129,9 +121,9 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
-	} else if err != nil {
-		panic(err)
 	}
+	core.Expect(err, "")
+
 	if !race.CanAcceptRegistration(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
@@ -143,10 +135,7 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	err = race.Save(ctx, conn)
-	if err != nil {
-		panic(err)
-	}
+	core.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registration approved")
 	return http.StatusOK, nil
@@ -165,9 +154,9 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
-	} else if err != nil {
-		panic(err)
 	}
+	core.Expect(err, "")
+
 	if !race.CanUpdateDescription(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
@@ -195,10 +184,7 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 		race.CoverImage = &coverImage
 	}
 
-	err = race.Save(ctx, conn)
-	if err != nil {
-		panic(err)
-	}
+	core.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("updated race description")
 	return http.StatusOK, nil

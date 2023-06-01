@@ -48,20 +48,14 @@ func RaceListQuery(ctx context.Context, conn *pgxpool.Pool) ([]RaceListModel, in
 		LEFT JOIN race_registrations on races.id = race_registrations.race_id
 		GROUP BY races.id, races.name
 		`, hasUserRegisteredSelect), queryArgs...)
-	if err != nil {
-		err = core.Wrap(err, "error querying races")
-		panic(err)
-	}
+	core.Expect(err, "error querying races")
 	defer rows.Close()
+
 	var races []RaceListModel
 	for rows.Next() {
 		var hasUserRegistered bool
 		var row RaceListModel
-		err := rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.CoverImage, &row.Organizers, &row.RegisteredCount, &hasUserRegistered)
-		if err != nil {
-			err = core.Wrap(err, "error scanning races")
-			panic(err)
-		}
+		core.Expect(rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.CoverImage, &row.Organizers, &row.RegisteredCount, &hasUserRegistered), "error scanning races")
 		row.CanRegister = isLoggedIn && row.IsOpenForRegistration && row.RegisteredCount < 100 && !hasUserRegistered
 		races = append(races, row)
 	}
@@ -100,10 +94,9 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 	if err == pgx.ErrNoRows {
 		err = errors.New("race not found")
 		return race, http.StatusNotFound, err
-	} else if err != nil {
-		err = core.Wrap(err, "error querying race")
-		panic(err)
 	}
+	core.Expect(err, "error querying race")
+
 	return race, http.StatusOK, nil
 }
 
@@ -127,18 +120,12 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 		WHERE race_registrations.race_id = $1
 		ORDER BY race_registrations.registered_at ASC
 		`, raceId)
-	if err != nil {
-		err = core.Wrap(err, "error querying race_registrations")
-		panic(err)
-	}
+	core.Expect(err, "error querying race_registrations")
 	defer rows.Close()
+
 	for rows.Next() {
 		var registration RaceRegistrationModel
-		err := rows.Scan(&registration.UserId, &registration.Status, &registration.RegisteredAt, &registration.Username)
-		if err != nil {
-			err = core.Wrap(err, "error scanning race_registrations")
-			panic(err)
-		}
+		core.Expect(rows.Scan(&registration.UserId, &registration.Status, &registration.RegisteredAt, &registration.Username), "error scanning race_registrations")
 		registrations = append(registrations, registration)
 	}
 	return registrations, http.StatusOK, nil

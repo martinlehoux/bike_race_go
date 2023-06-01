@@ -11,21 +11,15 @@ import (
 
 func encrypt(secret []byte, plainText string) string {
 	block, err := aes.NewCipher(secret)
-	if err != nil {
-		err = core.Wrap(err, "error creating AES cipher")
-		panic(err)
-	}
+	core.Expect(err, "error creating AES cipher")
+
 	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		err = core.Wrap(err, "error creating AEAD")
-		panic(err)
-	}
+	core.Expect(err, "error creating AEAD")
+
 	nonce := make([]byte, aead.NonceSize())
 	_, err = rand.Read(nonce)
-	if err != nil {
-		err = core.Wrap(err, "error generating nonce")
-		panic(err)
-	}
+	core.Expect(err, "error generating nonce")
+
 	return base64.URLEncoding.EncodeToString(aead.Seal(nonce, nonce, []byte(plainText), nil))
 }
 
@@ -36,15 +30,11 @@ func decrypt(secret []byte, encryptedText string) (string, error) {
 		return "", err
 	}
 	block, err := aes.NewCipher(secret)
-	if err != nil {
-		err = core.Wrap(err, "error creating AES cipher")
-		panic(err)
-	}
+	core.Expect(err, "error creating AES cipher")
+
 	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		err = core.Wrap(err, "error creating AEAD")
-		panic(err)
-	}
+	core.Expect(err, "error creating AEAD")
+
 	nonceSize := aead.NonceSize()
 	if len(encryptedBytes) < nonceSize {
 		err = errors.New("encrypted text is too short")

@@ -137,19 +137,16 @@ func AuthenticateUser(ctx context.Context, conn *pgxpool.Pool, username string, 
 		err = errors.New("user not found")
 		slog.Warn(err.Error())
 		return User{}, http.StatusNotFound, err
-	} else if err != nil {
-		err = core.Wrap(err, "error querying user")
-		panic(err)
 	}
+	core.Expect(err, "error querying user")
+
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		err = errors.New("incorrect password")
 		slog.Warn(err.Error())
 		return User{}, http.StatusBadRequest, err
-	} else if err != nil {
-		err = core.Wrap(err, "error comparing password hash")
-		panic(err)
 	}
+	core.Expect(err, "error comparing password hash")
 
 	slog.Info("User authenticated", slog.String("username", username))
 	return user, http.StatusOK, nil

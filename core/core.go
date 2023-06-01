@@ -12,10 +12,8 @@ type ID struct {
 
 func NewID() ID {
 	id, err := uuid.NewV4()
-	if err != nil {
-		err = Wrap(err, "error generating uuid")
-		panic(err)
-	}
+	Expect(err, "error generating uuid")
+
 	return ID{id}
 }
 

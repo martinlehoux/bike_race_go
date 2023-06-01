@@ -14,20 +14,13 @@ type UserListModel struct {
 
 func UserListQuery(ctx context.Context, conn *pgxpool.Pool) ([]UserListModel, int, error) {
 	rows, err := conn.Query(ctx, `SELECT username FROM users`)
-	if err != nil {
-		err = core.Wrap(err, "error querying users")
-		panic(err)
-	}
+	core.Expect(err, "error querying users")
 	defer rows.Close()
 
 	var users []UserListModel
 	for rows.Next() {
 		var user UserListModel
-		err := rows.Scan(&user.Username)
-		if err != nil {
-			err = core.Wrap(err, "error scanning users")
-			panic(err)
-		}
+		core.Expect(rows.Scan(&user.Username), "error scanning users")
 		users = append(users, user)
 	}
 
