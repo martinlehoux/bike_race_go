@@ -1,0 +1,27 @@
+hello: Hello %s
+raceStart: Race start
+maximumParticipants: Maximum participants
+openForRegistrationButton: Open for registration
+raceCoverImage: Race cover image
+clearLabel: Clear
+updateDescriptionButton: Update description
+user: User
+registrationDate: Registration date
+status: Status
+actions: Actions
+approveButton: Approve
+organizeRaceButton: Organize race
+raceNamePlaceholder: Race name
+registrationRatio: "%d / %d participants"
+registerButton: Register
+raceStart_notChosen: "Start: not chosen"
+raceStart_chosen: "Start: %s"
+allUsers: All users
+username: Username
+usernamePlaceholder: Username
+homeNavLink: Home
+raceNavLink: Races
+usersNavLink: Users
+profileNavLink: Profile
+logOutButton: Log out
+logInButton: Log in

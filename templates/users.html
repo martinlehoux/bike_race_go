@@ -1,15 +1,15 @@
 {{ template "layout.html" . }}
 
 {{ define "content" }}
-<h1>All users</h1>
+<h1>{{ call .T "allUsers"}}</h1>
 <table>
   <thead>
     <tr>
-      <th>Username</th>
+      <th>{{ call .T "username" }}</th>
     </tr>
   </thead>
   <tbody>
-    {{range .Users}}
+    {{range .Data.Users}}
     <tr>
       <td>{{.Username}}</td>
     </tr>

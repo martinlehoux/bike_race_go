@@ -15,7 +15,7 @@ import (
 
 func OrganizeRaceCommand(ctx context.Context, conn *pgxpool.Pool, name string) (int, error) {
 	logger := slog.With(slog.String("command", "OrganizeRaceCommand"))
-	loggedInUser, ok := auth.UserFromContext(ctx)
+	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
 		logger.Warn(err.Error())
@@ -27,7 +27,7 @@ func OrganizeRaceCommand(ctx context.Context, conn *pgxpool.Pool, name string) (
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	err = race.AddOrganizer(loggedInUser)
+	err = race.AddOrganizer(currentUser)
 	if err != nil {
 		err = core.Wrap(err, "error adding organizer")
 		logger.Warn(err.Error())
@@ -45,13 +45,13 @@ func OrganizeRaceCommand(ctx context.Context, conn *pgxpool.Pool, name string) (
 func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, maximumParticipants int) (int, error) {
 	logger := slog.With(slog.String("raceId", raceId.String()))
 	logger.Info("opening race for registration")
-	loggedInUser, ok := auth.UserFromContext(ctx)
+	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
 		slog.Warn(err.Error())
 		return http.StatusUnauthorized, err
 	}
-	logger = logger.With(slog.String("userId", loggedInUser.Id.String()))
+	logger = logger.With(slog.String("userId", currentUser.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
@@ -60,7 +60,7 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 		panic(err)
 	}
 
-	if org := core.Find(race.Organizers, func(userId core.ID) bool { return userId == loggedInUser.Id }); org == nil {
+	if org := core.Find(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }); org == nil {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
@@ -118,7 +118,7 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core
 func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, userId core.ID) (int, error) {
 	logger := slog.With(slog.String("command", "ApproveRaceRegistrationCommand"), slog.String("raceId", raceId.String()), slog.String("userId", userId.String()))
 	logger.Info("approving user registration")
-	loggedInUser, ok := auth.UserFromContext(ctx)
+	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
 		logger.Warn(err.Error())
@@ -131,7 +131,7 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	} else if err != nil {
 		panic(err)
 	}
-	if !race.CanAcceptRegistration(loggedInUser) {
+	if !race.CanAcceptRegistration(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
@@ -154,7 +154,7 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, clearCoverImage bool, coverImageFile multipart.File) (int, error) {
 	logger := slog.With(slog.String("command", "UpdateRaceDescriptionCommand"), slog.String("raceId", raceId.String()))
 	logger.Info("updating race description")
-	loggedInUser, ok := auth.UserFromContext(ctx)
+	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
 		err := errors.New("user not logged in")
 		logger.Warn(err.Error())
@@ -167,7 +167,7 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	} else if err != nil {
 		panic(err)
 	}
-	if !race.CanUpdateDescription(loggedInUser) {
+	if !race.CanUpdateDescription(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err

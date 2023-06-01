@@ -3,29 +3,35 @@
 {{ define "content" }}
 <main class="flex flex-col mx-4 items-center">
   <form action="/races/organize" method="post" class="flex flex-row mt-4 gap-2 max-w-screen-sm w-full">
-    <input type="text" name="name" placeholder="Race name" class="rounded px-2" />
-    <input type="submit" value="Organize race" class="btn-primary">
+    <input type="text" name="name" placeholder={{ call .T "raceNamePlaceholder" }} class="rounded px-2 py-1 border" />
+    <input type="submit" value={{ call .T "organizeRaceButton" }} class="btn-primary">
   </form>
 
-  <div class="flex flex-col mt-6 max-w-screen-xl grow w-full">
-    {{ range .Races}}
+  <div class="flex flex-col mt-6 max-w-screen-xl grow w-full gap-2">
+    {{ range .Data.Races}}
     <div class="flex flex-row rounded shadow p-1 gap-1 hover:bg-gray-100">
       <div class="aspect-video w-32  flex justify-center">
         {{if .CoverImage}}
-        <img src="/media/images/{{.CoverImage}}" alt="Race cover image">
+        <img src="/media/images/{{.CoverImage}}" alt={{ call $.T "raceCoverImage" }}>
         {{else}}
         <div class="bg-gray-300 w-full"></div>
         {{end}}
       </div>
       <div class="flex flex-col ml-2">
         <a href="/races/{{.Id.String}}" class="font-bold">{{.Name}}</a>
-        <span>Start: {{if not .StartAt.IsZero }}{{.StartAt}}{{else}}<i>Not chosen</i>{{end}}</span>
+        <span>
+          {{ if .StartAt.IsZero }}
+          {{ call $.T "raceStart_notChosen" }}
+          {{else}}
+          {{ call $.T "raceStart_chosen" .StartAt }}
+          {{end}}
+        </span>
         <span>{{.Organizers}}</span>
-        <span>{{.RegisteredCount}} / {{.MaximumParticipants}} participants</span>
+        <span>{{ call $.T "registrationRatio" .RegisteredCount .MaximumParticipants }}</span>
         <div class="flex flex-row">
           {{if .CanRegister}}
           <form action="/races/{{.Id.String}}/register" method="post">
-            <input type="submit" value="Register" class="btn-primary">
+            <input type="submit" value={{ call .T "registerButton" }} class="btn-primary">
           </form>
           {{end}}
         </div>

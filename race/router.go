@@ -16,12 +16,10 @@ import (
 )
 
 type RacesTemplateData struct {
-	LoggedInUser auth.User
-	Races        []RaceListModel
+	Races []RaceListModel
 }
 
 type RaceTemplateData struct {
-	LoggedInUser      auth.User
 	Race              RaceDetailModel
 	RaceRegistrations []RaceRegistrationModel
 }
@@ -49,6 +47,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 
 func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		data := auth.Data(r, RaceTemplateData{})
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
@@ -56,23 +55,19 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		loggedInUser, _ := auth.UserFromContext(ctx)
-		templateData := RaceTemplateData{
-			LoggedInUser: loggedInUser,
-		}
-		raceDetail, code, err := RaceDetailQuery(ctx, conn, raceId, loggedInUser)
+		raceDetail, code, err := RaceDetailQuery(ctx, conn, raceId)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		templateData.Race = raceDetail
+		data.Data.Race = raceDetail
 		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		templateData.RaceRegistrations = raceRegistrations
-		err = tpl.ExecuteTemplate(w, "race.html", templateData)
+		data.Data.RaceRegistrations = raceRegistrations
+		err = tpl.ExecuteTemplate(w, "race.html", data)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)
@@ -83,17 +78,14 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		loggedInUser, _ := auth.UserFromContext(ctx)
+		data := auth.Data(r, RacesTemplateData{})
 		races, code, err := RaceListQuery(ctx, conn)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		templateData := RacesTemplateData{
-			LoggedInUser: loggedInUser,
-			Races:        races,
-		}
-		err = tpl.ExecuteTemplate(w, "races.html", templateData)
+		data.Data.Races = races
+		err = tpl.ExecuteTemplate(w, "races.html", data)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)

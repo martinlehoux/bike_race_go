@@ -15,12 +15,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/kataras/i18n"
 	"golang.org/x/exp/slog"
 )
-
-type IndexTemplateData struct {
-	LoggedInUser auth.User
-}
 
 func loadEnv() {
 	err := godotenv.Load()
@@ -60,13 +57,14 @@ func connectDatabase(ctx context.Context) *pgxpool.Pool {
 }
 
 func main() {
+	i18n.SetDefaultLanguage("en-US")
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	ctx := context.Background()
 	loadEnv()
 	cookiesSecret := loadCookieSecret()
 	conn := connectDatabase(ctx)
 	defer conn.Close()
-	baseTpl := template.Must(template.ParseGlob("templates/base/*.html"))
+	baseTpl := template.Must(template.New("").ParseGlob("templates/base/*.html"))
 
 	router := chi.NewRouter()
 	router.Use(core.RecoverMiddleware)
@@ -78,8 +76,8 @@ func main() {
 
 	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		loggedInUser, _ := auth.UserFromContext(r.Context())
-		err := indexTpl.ExecuteTemplate(w, "index.html", IndexTemplateData{LoggedInUser: loggedInUser})
+		data := auth.Data(r, struct{}{})
+		err := indexTpl.ExecuteTemplate(w, "index.html", data)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			panic(err)

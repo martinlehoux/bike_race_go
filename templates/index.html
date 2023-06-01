@@ -2,13 +2,13 @@
 
 {{ define "content" }}
 <main class="flex flex-col mx-4 items-center">
-  {{ if .LoggedInUser.Username }}
-  <p>Hello {{.LoggedInUser.Username}}</p>
+  {{ if .Ok }}
+  <p>{{ call .T "hello" .CurrentUser.Username }}</p>
   {{ else }}
   <form action="/users/register" method="post">
-    <input type="text" name="username" placeholder="Username" />
+    <input type="text" name="username" placeholder={{call .T "usernamePlaceholder" }} />
     <input type="password" name="password" placeholder="password">
-    <input type="submit" value="Register" />
+    <input type="submit" value={{ call .T "registerButton" }} />
   </form>
   {{ end }}
 </main>

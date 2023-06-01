@@ -27,12 +27,12 @@ type RaceListModel struct {
 }
 
 func RaceListQuery(ctx context.Context, conn *pgxpool.Pool) ([]RaceListModel, int, error) {
-	loggedInUser, isLoggedIn := auth.UserFromContext(ctx)
+	currentUser, isLoggedIn := auth.UserFromContext(ctx)
 	var hasUserRegisteredSelect string
 	var queryArgs []interface{}
 	if isLoggedIn {
 		hasUserRegisteredSelect = `coalesce(bool_or(race_registrations.user_id = $1), false)`
-		queryArgs = append(queryArgs, loggedInUser.Id)
+		queryArgs = append(queryArgs, currentUser.Id)
 	} else {
 		hasUserRegisteredSelect = `false`
 	}
@@ -81,9 +81,10 @@ type RaceDetailModel struct {
 	CanAcceptRegistrations bool
 }
 
-func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, loggedInUser auth.User) (RaceDetailModel, int, error) {
+func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (RaceDetailModel, int, error) {
+	currentUser, _ := auth.UserFromContext(ctx)
 	var race RaceDetailModel
-	var isLoggedInUserOrganizer bool
+	var isCurrentUserOrganizer bool
 	err := conn.QueryRow(ctx, `
 		SELECT
 			races.id, races.name, races.maximum_participants, races.is_open_for_registration, races.start_at, coalesce(races.cover_image_id::text, ''),
@@ -92,10 +93,10 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, lo
 		LEFT JOIN race_organizers ON races.id = race_organizers.race_id 
 		WHERE races.id = $1
 		GROUP BY races.id, races.name
-		`, raceId, loggedInUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &race.CoverImage, &isLoggedInUserOrganizer)
-	race.CanOpenForRegistration = isLoggedInUserOrganizer && race.IsOpenForRegistration
-	race.CanAcceptRegistrations = isLoggedInUserOrganizer
-	race.CanUpdateDescription = isLoggedInUserOrganizer
+		`, raceId, currentUser.Id).Scan(&race.Id, &race.Name, &race.MaximumParticipants, &race.IsOpenForRegistration, &race.StartAt, &race.CoverImage, &isCurrentUserOrganizer)
+	race.CanOpenForRegistration = isCurrentUserOrganizer && race.IsOpenForRegistration
+	race.CanAcceptRegistrations = isCurrentUserOrganizer
+	race.CanUpdateDescription = isCurrentUserOrganizer
 	if err == pgx.ErrNoRows {
 		err = errors.New("race not found")
 		return race, http.StatusNotFound, err

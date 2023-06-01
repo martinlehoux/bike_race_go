@@ -47,8 +47,7 @@ func AuthenticateUser(ctx context.Context, conn *pgxpool.Pool, username string, 
 }
 
 type UsersTemplateData struct {
-	LoggedInUser User
-	Users        []UserListModel
+	Users []UserListModel
 }
 
 func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte) chi.Router {
@@ -57,8 +56,8 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte
 	userListTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		loggedInUser, ok := UserFromContext(ctx)
-		if !ok {
+		data := Data(r, UsersTemplateData{})
+		if !data.Ok {
 			Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
@@ -67,11 +66,8 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte
 			http.Error(w, err.Error(), code)
 			return
 		}
-		templateData := UsersTemplateData{
-			LoggedInUser: loggedInUser,
-			Users:        users,
-		}
-		err = userListTpl.ExecuteTemplate(w, "users.html", templateData)
+		data.Data.Users = users
+		err = userListTpl.ExecuteTemplate(w, "users.html", data)
 		if err != nil {
 			err = core.Wrap(err, "error executing template")
 			slog.Error(err.Error())
