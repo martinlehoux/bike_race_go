@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/exaring/otelpgx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,7 +53,11 @@ func loadCookieSecret() []byte {
 }
 
 func connectDatabase(ctx context.Context) *pgxpool.Pool {
-	pool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+	tracer := otelpgx.NewTracer()
+	config, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	core.Expect(err, "error parsing database url")
+	config.ConnConfig.Tracer = tracer
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		err = core.Wrap(err, "error connecting to database")
 		slog.Error(err.Error())
@@ -85,7 +90,7 @@ func main() {
 	client := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")), otlptracehttp.WithInsecure())
 	exporter, err := otlptrace.New(ctx, client)
 	core.Expect(err, "error creating exporter")
-	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(exporter), trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName("main"), semconv.ServiceVersion("1.0.0"))))
+	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(exporter), trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName("bike_race"))))
 	otel.SetTracerProvider(tracerProvider)
 	defer tracerProvider.Shutdown(ctx)
 
