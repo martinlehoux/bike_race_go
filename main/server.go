@@ -16,6 +16,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/kataras/i18n"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"golang.org/x/exp/slog"
 )
 
@@ -56,6 +62,16 @@ func connectDatabase(ctx context.Context) *pgxpool.Pool {
 	return pool
 }
 
+func tracerMiddleware(next http.Handler) http.Handler {
+	tracer := otel.Tracer("tracer")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		ctx, span := tracer.Start(ctx, r.URL.Path)
+		defer span.End()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func main() {
 	i18n.SetDefaultLanguage("en-US")
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
@@ -66,8 +82,16 @@ func main() {
 	defer conn.Close()
 	baseTpl := template.Must(template.New("").ParseGlob("templates/base/*.html"))
 
+	client := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")), otlptracehttp.WithInsecure())
+	exporter, err := otlptrace.New(ctx, client)
+	core.Expect(err, "error creating exporter")
+	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(exporter), trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName("main"), semconv.ServiceVersion("1.0.0"))))
+	otel.SetTracerProvider(tracerProvider)
+	defer tracerProvider.Shutdown(ctx)
+
 	router := chi.NewRouter()
 	router.Use(core.RecoverMiddleware)
+	router.Use(tracerMiddleware)
 	router.Use(auth.CookieAuthMiddleware(conn, cookiesSecret))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))

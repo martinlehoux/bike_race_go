@@ -6,12 +6,18 @@
 ```
 dbmate up
 air
+cd webapp && npx tailwindcss -i ../static/base.css -o ../static/index.css --watch
 ```
 
 ## Secrets
 
-- DATABASE_URL
-- COOKIE_SECRET: `head -c32 </dev/urandom | xxd -p -u`
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+DBMATE_MIGRATIONS_DIR=migrations/
+DBMATE_SCHEMA_FILE=schema.sql
+COOKIE_SECRET=`head -c32 </dev/urandom | xxd -p -u`
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318
+```
 
 ## Images
 
