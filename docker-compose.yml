@@ -21,6 +21,17 @@ services:
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml:Z
       - tempo:/tmp/tempo
+  grafana:
+    image: grafana/grafana:9.5.2
+    volumes:
+      - ./grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    ports:
+      - "3001:3000"
 volumes:
   db:
     driver: local
