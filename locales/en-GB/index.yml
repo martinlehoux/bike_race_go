@@ -1,32 +1,29 @@
-hello: Hello %s
-raceStart: Race start
-maximumParticipants: Maximum participants
-openForRegistrationButton: Open for registration
-raceCoverImage: Race cover image
+actions: Actions
+allUsers: All users
+approveButton: Approve
 clearLabel: Clear
+hello: Hello %s
+homeNavLink: Home
+language: Language
+logInButton: Log in
+logOutButton: Log out
+maximumParticipants: Maximum participants
+notFound: This is not the page you are looking for
+openForRegistrationButton: Open for registration
+organizeRaceButton: Organize race
+profile: Profile
+profileNavLink: Profile
+raceCoverImage: Race cover image
+raceNamePlaceholder: Race name
+raceNavLink: Races
+raceStart: Race start
+raceStart_notChosen: 'Start: not chosen'
+registerButton: Register
+registrationDate: Registration date
+registrationRatio: '%d / %d participants'
+status: Status
 updateDescriptionButton: Update description
 user: User
-registrationDate: Registration date
-status: Status
-actions: Actions
-approveButton: Approve
-organizeRaceButton: Organize race
-raceNamePlaceholder: Race name
-registrationRatio: "%d / %d participants"
-registerButton: Register
-raceStart_notChosen: "Start: not chosen"
-raceStart_chosen: "Start: %s"
-allUsers: All users
 username: Username
 usernamePlaceholder: Username
-homeNavLink: Home
-raceNavLink: Races
 usersNavLink: Users
-profileNavLink: Profile
-logOutButton: Log out
-logInButton: Log in
-profile: Profile
-language: Language
-language_en: English
-language_fr: Français
-notFound: This is not the page you are looking for
