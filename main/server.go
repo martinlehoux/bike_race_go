@@ -63,6 +63,7 @@ func connectDatabase(ctx context.Context) *pgxpool.Pool {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
+	core.Expect(pool.Ping(ctx), "error pinging database")
 	slog.Info("connected to database")
 	return pool
 }
