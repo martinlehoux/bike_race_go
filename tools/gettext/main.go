@@ -2,6 +2,7 @@ package main
 
 import (
 	"bike_race/core"
+	"flag"
 	"fmt"
 	"io/fs"
 	"os"
@@ -37,6 +38,8 @@ func extractKeys() map[string]int {
 }
 
 func main() {
+	write := flag.Bool("write", false, "write new locales")
+	flag.Parse()
 	baseLogger := slog.Default()
 	langs := [...]string{"en-GB", "fr-FR"}
 
@@ -78,8 +81,10 @@ func main() {
 
 		logger.Info("finished checking locales", slog.Int("count", len(newLocales)), slog.Int("correct", correctLocales), slog.String("completion", fmt.Sprintf("%d%%", correctLocales*100/len(extractedKeys))))
 
-		content, err := yaml.Marshal(newLocales)
-		core.Expect(err, "error marshalling yaml")
-		core.Expect(os.WriteFile(filepath.Join("locales", lang, "index.yml"), content, 0644), "error writing file")
+		if *write {
+			content, err := yaml.Marshal(newLocales)
+			core.Expect(err, "error marshalling yaml")
+			core.Expect(os.WriteFile(filepath.Join("locales", lang, "index.yml"), content, 0644), "error writing file")
+		}
 	}
 }
