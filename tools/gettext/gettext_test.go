@@ -52,7 +52,6 @@ func TestExtractKeysWithSeveralArgs(t *testing.T) {
 }
 
 func TestExtractKeysWithComplexArgs(t *testing.T) {
-	t.Skip("not implemented")
 	content := `{{ call $.T "raceStart_chosen" (.StartAt.Format "Monday, January 2, 2006 at 15:04") }}`
 
 	keys := extractKeys(content)

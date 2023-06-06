@@ -14,6 +14,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func isIdentifierRune(char rune) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '.'
+}
+
 func extractKeys(content string) map[string]int {
 	extractedKeys := make(map[string]int, 0)
 	reg, err := regexp.Compile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
@@ -23,8 +27,31 @@ func extractKeys(content string) map[string]int {
 		key := match[1]
 		args := strings.TrimSpace(match[2])
 		argsCount := 0
-		if args != "" {
-			argsCount += len(strings.Split(args, " "))
+		currentBlock := ""
+		currentNesting := 0
+		currentStringLiteral := false
+		for _, char := range args {
+			if isIdentifierRune(char) || currentStringLiteral {
+				currentBlock += string(char)
+			} else if char == ' ' && !currentStringLiteral {
+				if currentBlock != "" {
+					if currentNesting == 0 {
+						argsCount++
+					}
+					currentBlock = ""
+				}
+			} else if char == '(' && !currentStringLiteral {
+				currentBlock = ""
+				currentNesting++
+			} else if char == ')' && !currentStringLiteral {
+				currentBlock = ""
+				currentNesting--
+			} else if char == '"' {
+				currentStringLiteral = !currentStringLiteral
+			}
+		}
+		if currentBlock != "" {
+			argsCount++
 		}
 		extractedKeys[key] = argsCount
 	}
