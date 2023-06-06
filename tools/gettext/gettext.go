@@ -14,21 +14,32 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func extractKeys() map[string]int {
+func extractKeys(content string) map[string]int {
 	extractedKeys := make(map[string]int, 0)
-
-	reg, err := regexp.Compile(`{{\s*call \$?\.T\s*"(.+)"\s*(?:([.\w]+)\s*)*}}`)
+	reg, err := regexp.Compile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
 	core.Expect(err, "error compiling regexp")
+	matches := reg.FindAllStringSubmatch(string(content), -1)
+	for _, match := range matches {
+		key := match[1]
+		args := strings.TrimSpace(match[2])
+		argsCount := 0
+		if args != "" {
+			argsCount += len(strings.Split(args, " "))
+		}
+		extractedKeys[key] = argsCount
+	}
+	return extractedKeys
+}
+
+func extractAllKeys() map[string]int {
+	extractedKeys := make(map[string]int, 0)
 
 	filepath.Walk("templates", func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() && filepath.Ext(path) == ".html" {
 			content, err := os.ReadFile(path)
 			core.Expect(err, "error reading file")
-			matches := reg.FindAllStringSubmatch(string(content), -1)
-			for _, match := range matches {
-				key := match[1]
-				parts := strings.Split(strings.TrimSpace(match[0][2:len(match[0])-2]), " ")
-				extractedKeys[key] = len(parts) - 3
+			for key, value := range extractKeys(string(content)) {
+				extractedKeys[key] = value
 			}
 		}
 		return nil
@@ -43,7 +54,7 @@ func main() {
 	baseLogger := slog.Default()
 	langs := [...]string{"en-GB", "fr-FR"}
 
-	extractedKeys := extractKeys()
+	extractedKeys := extractAllKeys()
 	baseLogger.Info("extracted keys from templates", slog.Int("count", len(extractedKeys)))
 
 	for _, lang := range langs {

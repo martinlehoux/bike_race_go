@@ -17,6 +17,7 @@ raceCoverImage: Race cover image
 raceNamePlaceholder: Race name
 raceNavLink: Races
 raceStart: Race start
+raceStart_chosen: 'Start: %s'
 raceStart_notChosen: 'Start: not chosen'
 registerButton: Register
 registrationDate: Registration date
