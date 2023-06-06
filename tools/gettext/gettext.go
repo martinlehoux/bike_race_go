@@ -18,6 +18,66 @@ func isIdentifierRune(char rune) bool {
 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '.'
 }
 
+type ArgsParser struct {
+	argsCount            int
+	currentBlock         string
+	currentNesting       int
+	currentStringLiteral bool
+}
+
+func (p *ArgsParser) parseStringLiteral(char rune) {
+	switch char {
+	case '"':
+		p.currentStringLiteral = false
+		p.currentBlock = ""
+	default:
+		p.currentBlock += string(char)
+	}
+}
+
+func (p *ArgsParser) parseNonStringLiteral(char rune) {
+	if isIdentifierRune(char) {
+		p.currentBlock += string(char)
+		return
+	}
+	switch char {
+	case ' ':
+		if p.currentBlock != "" {
+			if p.currentNesting == 0 {
+				p.argsCount++
+			}
+			p.currentBlock = ""
+		}
+	case '(':
+		p.currentBlock = ""
+		p.currentNesting++
+	case ')':
+		p.currentBlock = ""
+		p.currentNesting--
+		p.argsCount++
+	case '"':
+		p.currentStringLiteral = true
+	}
+}
+
+func (p *ArgsParser) Parse(args string) {
+	for _, char := range args {
+		switch p.currentStringLiteral {
+		case true:
+			p.parseStringLiteral(char)
+		case false:
+			p.parseNonStringLiteral(char)
+		}
+	}
+}
+
+func (p ArgsParser) ArgsCount() int {
+	if p.currentBlock != "" {
+		p.argsCount++
+	}
+	return p.argsCount
+}
+
 func extractKeys(content string) map[string]int {
 	extractedKeys := make(map[string]int, 0)
 	reg, err := regexp.Compile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
@@ -26,34 +86,9 @@ func extractKeys(content string) map[string]int {
 	for _, match := range matches {
 		key := match[1]
 		args := strings.TrimSpace(match[2])
-		argsCount := 0
-		currentBlock := ""
-		currentNesting := 0
-		currentStringLiteral := false
-		for _, char := range args {
-			if isIdentifierRune(char) || currentStringLiteral {
-				currentBlock += string(char)
-			} else if char == ' ' && !currentStringLiteral {
-				if currentBlock != "" {
-					if currentNesting == 0 {
-						argsCount++
-					}
-					currentBlock = ""
-				}
-			} else if char == '(' && !currentStringLiteral {
-				currentBlock = ""
-				currentNesting++
-			} else if char == ')' && !currentStringLiteral {
-				currentBlock = ""
-				currentNesting--
-			} else if char == '"' {
-				currentStringLiteral = !currentStringLiteral
-			}
-		}
-		if currentBlock != "" {
-			argsCount++
-		}
-		extractedKeys[key] = argsCount
+		parser := ArgsParser{}
+		parser.Parse(args)
+		extractedKeys[key] = parser.ArgsCount()
 	}
 	return extractedKeys
 }

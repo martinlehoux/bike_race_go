@@ -2,6 +2,7 @@
 
 - go install github.com/cosmtrek/air@latest
 - go install github.com/amacneil/dbmate@latest
+- go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 
 ```
 dbmate up

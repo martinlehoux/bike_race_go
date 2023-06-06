@@ -41,54 +41,11 @@ func checkQueryFunc(pass *analysis.Pass, node *ast.FuncDecl) {
 	}
 }
 
-func checkLogBeforePanic(pass *analysis.Pass, node *ast.BlockStmt) {
-	for i, stmt := range node.List {
-		if expr, ok := stmt.(*ast.ExprStmt); ok {
-			if call, ok := expr.X.(*ast.CallExpr); ok {
-				if i > 0 && isIdent(call.Fun, "panic") {
-					if prev, ok := node.List[i-1].(*ast.ExprStmt); ok {
-						if prevCall, ok := prev.X.(*ast.CallExpr); ok {
-							if selector, ok := prevCall.Fun.(*ast.SelectorExpr); ok {
-								if isIdent(selector.X, "slog") {
-									pass.Reportf(call.Pos(), "no log before panic")
-								} else if isIdent(selector.X, "logger") {
-									pass.Reportf(call.Pos(), "no log before panic")
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 func visit(pass *analysis.Pass) func(node ast.Node) bool {
 	return func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.CallExpr:
-			if selector, ok := node.Fun.(*ast.SelectorExpr); ok {
-				if ident, ok := selector.X.(*ast.Ident); ok {
-					if ident.Name == "log" {
-						pass.Reportf(node.Pos(), "found old log usage")
-					}
-				}
-			}
-			if isSelector(node.Fun, "slog", "With") || isSelector(node.Fun, "logger", "With") {
-				for _, arg := range node.Args {
-					if call, ok := arg.(*ast.CallExpr); ok {
-						if selector, ok := call.Fun.(*ast.SelectorExpr); ok {
-							if ident, ok := selector.X.(*ast.Ident); ok {
-								if ident.Name != "slog" {
-									pass.Reportf(node.Pos(), "slog.With and logger.With must be called with a slog arg")
-								}
-							}
-						}
-					} else {
-						pass.Reportf(node.Pos(), "slog.With and logger.With must be called with a slog arg")
-					}
-				}
-			}
+			checkLogUsage(pass, node)
 		case *ast.FuncDecl:
 			if strings.HasSuffix(node.Name.Name, "Query") {
 				checkQueryFunc(pass, node)
