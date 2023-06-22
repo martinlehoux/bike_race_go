@@ -189,3 +189,41 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	logger.Info("updated race description")
 	return http.StatusOK, nil
 }
+
+func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, medicalCertificateFile multipart.File) (int, error) {
+	logger := slog.With(slog.String("command", "UploadRegistrationMedicalCertificateCommand"), slog.String("raceId", raceId.String()))
+	logger.Info("uploading registration medical certificate")
+	currentUser, ok := auth.UserFromContext(ctx)
+	if !ok {
+		err := errors.New("user not logged in")
+		logger.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	logger = logger.With(slog.String("userId", currentUser.Id.String()))
+	race, err := LoadRace(ctx, conn, raceId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		logger.Warn(err.Error())
+		return http.StatusNotFound, err
+	}
+	core.Expect(err, "")
+
+	medicalCertificate := core.NewFile()
+	err = medicalCertificate.Save(medicalCertificateFile)
+	if err != nil {
+		err = core.Wrap(err, "error saving medical_certificate")
+		logger.Warn(err.Error())
+		return http.StatusBadRequest, err
+	}
+	err = race.UploadMedicalCertificate(currentUser.Id, medicalCertificate)
+	if err != nil {
+		medicalCertificate.Delete() // TODO: handle error?
+		err = core.Wrap(err, "error uploading medical certificate")
+		logger.Warn(err.Error())
+		return http.StatusBadRequest, err
+	}
+
+	core.Expect(race.Save(ctx, conn), "")
+
+	logger.Info("registration medical certificate uploaded")
+	return http.StatusOK, nil
+}

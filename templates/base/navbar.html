@@ -4,6 +4,9 @@
       <a href="/" class="px-4 py-2 hover:bg-blue-700">{{ call .T "homeNavLink" }}</a>
       <a href="/races" class="px-4 py-2 hover:bg-blue-700">{{ call .T "raceNavLink" }}</a>
       <a href="/users" class="px-4 py-2 hover:bg-blue-700">{{ call .T "usersNavLink" }}</a>
+      {{ if .Ok}}
+      <a href="/races/registrations" class="px-4 py-2 hover:bg-blue-700">{{ call .T "registrationsNavLink" }}</a>
+      {{ end }}
     </div>
     <div class="flex flex-row">
       {{if .Ok}}

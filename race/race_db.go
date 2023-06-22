@@ -27,7 +27,7 @@ func LoadRace(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (Race, er
 	}
 	race.Registrations = map[core.ID]RaceRegistration{}
 	rows, err := tx.Query(ctx, `
-	SELECT user_id, registered_at, status
+	SELECT user_id, registered_at, status, medical_certificate_id, is_medical_certificate_approved
 	FROM race_registrations
 	WHERE race_id = $1
 	`, raceId)
@@ -37,7 +37,7 @@ func LoadRace(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (Race, er
 	defer rows.Close()
 	for rows.Next() {
 		var registration RaceRegistration
-		err := rows.Scan(&registration.UserId, &registration.RegisteredAt, &registration.Status)
+		err := rows.Scan(&registration.UserId, &registration.RegisteredAt, &registration.Status, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved)
 		if err != nil {
 			return Race{}, core.Wrap(err, "error scanning race_registrations table")
 		}
@@ -71,10 +71,10 @@ func (race *Race) Save(ctx context.Context, conn *pgxpool.Pool) error {
 	}
 	for _, registration := range race.Registrations {
 		_, err = tx.Exec(ctx, `
-		INSERT INTO race_registrations (race_id, user_id, registered_at, status)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (race_id, user_id) DO UPDATE SET registered_at = $3, status = $4
-		`, race.Id, registration.UserId, registration.RegisteredAt, registration.Status)
+		INSERT INTO race_registrations (race_id, user_id, registered_at, status, medical_certificate_id, is_medical_certificate_approved)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (race_id, user_id) DO UPDATE SET registered_at = $3, status = $4, medical_certificate_id = $5, is_medical_certificate_approved = $6
+		`, race.Id, registration.UserId, registration.RegisteredAt, registration.Status, registration.MedicalCertificate, registration.IsMedicalCertificateApproved)
 		if err != nil {
 			return core.Wrap(err, "error upserting race_registrations table")
 		}

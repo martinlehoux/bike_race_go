@@ -1,0 +1,24 @@
+{{template "layout.html" . }}
+
+{{ define "content" }}
+<main class="flex flex-col mx-4 items-center">
+  <h1 class="text-xl font-bold text-blue-900 mt-4">{{ call .T "userRegistrations_title"}}</h1>
+
+  <div class="flex flex-col">
+    {{range .Data.Registrations}}
+    <div class="flex flex-col gap-4">
+      <span>{{.Race.Name}}</span>
+      {{ if .Permissions.CanUploadMedicalCertificate }}
+      <form action="/races/{{.Race.Id.String}}/upload_medical_certificate" method="post" enctype="multipart/form-data"
+        class="flex flex-row">
+        <input type="file" name="medical_certificate" id="medical_certificate" />
+        <input type="submit" value={{ call $.T "uploadMedicalCertificateButton" }} class="btn-primary">
+      </form>
+      {{else}}
+      <span>{{ call $.T "medicalCertificateUploaded" }}</span>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</main>
+{{end}}

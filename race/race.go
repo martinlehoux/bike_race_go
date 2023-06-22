@@ -72,7 +72,32 @@ func (race *Race) ApproveRegistration(userId core.ID) error {
 	if registration.Status != Registered {
 		return errors.New("registration can't be approved")
 	}
+	if !registration.IsMedicalCertificateApproved {
+		return errors.New("medical certificate is not approved")
+	}
 	registration.Status = Approved
+	race.Registrations[userId] = registration
+	return nil
+}
+
+func (race *Race) UploadMedicalCertificate(userId core.ID, medicalCertificate core.File) error {
+	registration, ok := race.Registrations[userId]
+	if !ok {
+		return errors.New("user is not registered")
+	}
+	if registration.Status != Registered {
+		return errors.New("registration is not in the correct status to upload a medical certificate")
+	}
+
+	if registration.MedicalCertificate != nil {
+		err := registration.MedicalCertificate.Delete()
+		if err != nil {
+			return core.Wrap(err, "error deleting old medical certificate")
+		}
+	}
+
+	registration.MedicalCertificate = &medicalCertificate
+	registration.IsMedicalCertificateApproved = false
 	race.Registrations[userId] = registration
 	return nil
 }

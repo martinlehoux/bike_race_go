@@ -143,3 +143,47 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 	}
 	return registrations, http.StatusOK, nil
 }
+
+type UserRegistrationModelPermissions struct {
+	CanUploadMedicalCertificate bool
+}
+
+type UserRegistrationModel struct {
+	Status RaceRegistrationStatus
+	Race   struct {
+		Id   core.ID
+		Name string
+	}
+	Permissions UserRegistrationModelPermissions
+}
+
+func CurrentUserRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool) ([]UserRegistrationModel, int, error) {
+	currentUser, ok := auth.UserFromContext(ctx)
+	if !ok {
+		err := errors.New("user not logged in")
+		return nil, http.StatusUnauthorized, err
+	}
+	registrations := []UserRegistrationModel{}
+	rows, err := conn.Query(ctx, `
+		SELECT
+			race_registrations.race_id, race_registrations.status, race_registrations.medical_certificate_id,
+			races.name
+		FROM
+			race_registrations
+			INNER JOIN races ON race_registrations.race_id = races.id
+		WHERE
+			race_registrations.user_id = $1
+			`, currentUser.Id)
+	core.Expect(err, "error querying race_registrations")
+	defer rows.Close()
+	for rows.Next() {
+		var registration UserRegistrationModel
+		var medicalCertificate *core.File
+		core.Expect(rows.Scan(&registration.Race.Id, &registration.Status, &medicalCertificate, &registration.Race.Name), "error scanning race_registrations")
+		registration.Permissions = UserRegistrationModelPermissions{
+			CanUploadMedicalCertificate: registration.Status == Registered && medicalCertificate == nil,
+		}
+		registrations = append(registrations, registration)
+	}
+	return registrations, http.StatusOK, nil
+}

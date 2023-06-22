@@ -25,11 +25,13 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 	}
 
 	router.Post("/organize", organizeRaceRoute(conn))
+	router.Post("/{raceId}/upload_medical_certificate", uploadRegistrationMedicalCertificateRoute(conn))
 	router.Post("/{raceId}/open_for_registration", openRaceForRegistrationRoute(conn))
 	router.Post("/{raceId}/update_description", updateRaceDescriptionRoute(conn))
 	router.Post("/{raceId}/register", registerForRaceRoute(conn))
 	router.Post("/{raceId}/registrations/{userId}/approve", approveRaceRegistrationRoute(conn))
 
+	router.Get("/registrations", viewCurrentUserRegistrationsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/registrations.html"))))
 	router.Get("/{raceId}", viewRaceDetailsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/race.html"))))
 	router.Get("/", viewRaceListRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/races.html"))))
 
@@ -85,6 +87,24 @@ func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerF
 	}
 }
 
+type CurrentUserRegistrationsTemplateData struct {
+	Registrations []UserRegistrationModel
+}
+
+func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		data := auth.GetTemplateData(r, CurrentUserRegistrationsTemplateData{})
+		registrations, code, err := CurrentUserRegistrationsQuery(ctx, conn)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+		data.Data.Registrations = registrations
+		core.Expect(tpl.ExecuteTemplate(w, "registrations.html", data), "error executing template")
+	}
+}
+
 func approveRaceRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -129,6 +149,34 @@ func registerForRaceRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 		} else {
 			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+		}
+	}
+}
+
+func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		medicalCertificateFile, _, err := r.FormFile("medical_certificate")
+		if err != nil {
+			err = core.Wrap(err, "error parsing medical_certificate")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer medicalCertificateFile.Close()
+		code, err := UploadRegistrationMedicalCertificateCommand(ctx, conn, raceId, medicalCertificateFile)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+		} else {
+			http.Redirect(w, r, "/races/registrations", http.StatusSeeOther)
 		}
 	}
 }
