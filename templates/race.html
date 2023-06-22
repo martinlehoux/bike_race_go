@@ -26,9 +26,9 @@
     {{if .Data.Race.Permissions.CanUpdateDescription}}
     <form action="/races/{{.Data.Race.Id.String}}/update_description" method="post" enctype="multipart/form-data"
       class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4">
-      <div class="aspect-video w-full flex justify-center">
+      <div class="w-full flex justify-center">
         {{if .Data.Race.CoverImage}}
-        <img src="/media/images/{{.Data.Race.CoverImage}}" alt={{ call .T "raceCoverImage" }}>
+        <img src="/media/images/{{.Data.Race.CoverImage}}" alt={{ call .T "raceCoverImage" }} class="object-contain">
         {{else}}
         <div class="bg-gray-300 w-full"></div>
         {{end}}

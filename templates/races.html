@@ -10,9 +10,9 @@
   <div class="flex flex-col mt-6 max-w-screen-xl grow w-full gap-2">
     {{ range .Data.Races}}
     <div class="flex flex-row rounded shadow p-1 gap-1 hover:bg-gray-100">
-      <div class="aspect-video w-32  flex justify-center">
+      <div class="w-32 flex justify-center">
         {{if .CoverImage}}
-        <img src="/media/images/{{.CoverImage}}" alt={{ call $.T "raceCoverImage" }}>
+        <img src="/media/images/{{.CoverImage}}" alt={{ call $.T "raceCoverImage" }} class="object-contain">
         {{else}}
         <div class="bg-gray-300 w-full"></div>
         {{end}}
