@@ -117,7 +117,7 @@ type RaceRegistrationModel struct {
 	}
 	Status                       RaceRegistrationStatus
 	RegisteredAt                 time.Time
-	MedicalCertificate           string
+	MedicalCertificate           *string
 	IsMedicalCertificateApproved bool
 	Permissions                  RaceRegistrationPermissionsModel
 }
@@ -145,7 +145,7 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 		core.Expect(rows.Scan(&registration.User.Id, &registration.Status, &registration.RegisteredAt, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved, &registration.User.Username), "error scanning race_registrations")
 		registration.Permissions = RaceRegistrationPermissionsModel{
 			CanApprove:                   racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.IsMedicalCertificateApproved,
-			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != "" && !registration.IsMedicalCertificateApproved,
+			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != nil && !registration.IsMedicalCertificateApproved,
 		}
 		registrations = append(registrations, registration)
 	}
