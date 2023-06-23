@@ -64,7 +64,7 @@
         <td>
           {{if .MedicalCertificate}}
           <a href="/media/files/{{.MedicalCertificate}}" class="btn-secondary"
-            download="{{.User.Username}}_medical_certificate.xlsx">{{ call $.T
+            download="{{.User.Username}}_medical_certificate_{{.MedicalCertificate}}">{{ call $.T
             "medicalCertificate_download"
             }}</a>
           {{end}}

@@ -7,10 +7,10 @@ import (
 	"os"
 )
 
-type File (ID)
+type File (string)
 
-func NewFile() File {
-	return File(NewID())
+func NewFile(ext string) File {
+	return File(NewID().String() + ext)
 }
 
 func (file File) Path() string {

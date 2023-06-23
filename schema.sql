@@ -43,8 +43,8 @@ CREATE TABLE public.race_registrations (
     user_id uuid NOT NULL,
     registered_at timestamp with time zone NOT NULL,
     status public.race_registrations__status NOT NULL,
-    medical_certificate_id uuid,
-    is_medical_certificate_approved boolean NOT NULL
+    is_medical_certificate_approved boolean NOT NULL,
+    medical_certificate text
 );
 
 
@@ -190,4 +190,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230523170147'),
     ('20230527172746'),
     ('20230601171320'),
-    ('20230622171111');
+    ('20230622171111'),
+    ('20230623071721');

@@ -228,7 +228,7 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	return http.StatusOK, nil
 }
 
-func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, medicalCertificateFile multipart.File) (int, error) {
+func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, medicalCertificateFile multipart.File, medicalCertificateExt string) (int, error) {
 	logger := slog.With(slog.String("command", "UploadRegistrationMedicalCertificateCommand"), slog.String("raceId", raceId.String()))
 	logger.Info("uploading registration medical certificate")
 	currentUser, ok := auth.UserFromContext(ctx)
@@ -245,7 +245,7 @@ func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxp
 	}
 	core.Expect(err, "")
 
-	medicalCertificate := core.NewFile()
+	medicalCertificate := core.NewFile(medicalCertificateExt)
 	err = medicalCertificate.Save(medicalCertificateFile)
 	if err != nil {
 		err = core.Wrap(err, "error saving medical_certificate")

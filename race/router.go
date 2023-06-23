@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -193,7 +194,7 @@ func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerF
 			return
 		}
 
-		medicalCertificateFile, _, err := r.FormFile("medical_certificate")
+		medicalCertificateFile, medicalCertificateFileHeader, err := r.FormFile("medical_certificate")
 		if err != nil {
 			err = core.Wrap(err, "error parsing medical_certificate")
 			slog.Warn(err.Error())
@@ -201,7 +202,7 @@ func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerF
 			return
 		}
 		defer medicalCertificateFile.Close()
-		code, err := UploadRegistrationMedicalCertificateCommand(ctx, conn, raceId, medicalCertificateFile)
+		code, err := UploadRegistrationMedicalCertificateCommand(ctx, conn, raceId, medicalCertificateFile, filepath.Ext(medicalCertificateFileHeader.Filename))
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {

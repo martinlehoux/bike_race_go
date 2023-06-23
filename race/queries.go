@@ -117,7 +117,7 @@ type RaceRegistrationModel struct {
 	}
 	Status                       RaceRegistrationStatus
 	RegisteredAt                 time.Time
-	MedicalCertificate           *core.ID
+	MedicalCertificate           string
 	IsMedicalCertificateApproved bool
 	Permissions                  RaceRegistrationPermissionsModel
 }
@@ -129,7 +129,7 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 			race_registrations.user_id,
 			race_registrations.status,
 			race_registrations.registered_at,
-			race_registrations.medical_certificate_id,
+			race_registrations.medical_certificate,
 			race_registrations.is_medical_certificate_approved,
 			users.username
 		FROM race_registrations
@@ -145,7 +145,7 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 		core.Expect(rows.Scan(&registration.User.Id, &registration.Status, &registration.RegisteredAt, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved, &registration.User.Username), "error scanning race_registrations")
 		registration.Permissions = RaceRegistrationPermissionsModel{
 			CanApprove:                   racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.IsMedicalCertificateApproved,
-			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != nil && !registration.IsMedicalCertificateApproved,
+			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != "" && !registration.IsMedicalCertificateApproved,
 		}
 		registrations = append(registrations, registration)
 	}
@@ -174,7 +174,7 @@ func CurrentUserRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool) ([]U
 	registrations := []UserRegistrationModel{}
 	rows, err := conn.Query(ctx, `
 		SELECT
-			race_registrations.race_id, race_registrations.status, race_registrations.medical_certificate_id,
+			race_registrations.race_id, race_registrations.status, race_registrations.medical_certificate,
 			races.name
 		FROM
 			race_registrations
