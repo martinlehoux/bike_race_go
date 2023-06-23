@@ -106,15 +106,20 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 }
 
 type RaceRegistrationPermissionsModel struct {
-	CanApprove bool
+	CanApprove                   bool
+	CanApproveMedicalCertificate bool
 }
 
 type RaceRegistrationModel struct {
-	UserId       core.ID
-	Username     string
-	Status       RaceRegistrationStatus
-	RegisteredAt time.Time
-	Permissions  RaceRegistrationPermissionsModel
+	User struct {
+		Id       core.ID
+		Username string
+	}
+	Status                       RaceRegistrationStatus
+	RegisteredAt                 time.Time
+	MedicalCertificate           *core.ID
+	IsMedicalCertificateApproved bool
+	Permissions                  RaceRegistrationPermissionsModel
 }
 
 func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, racePermissions RacePermissionsModel) ([]RaceRegistrationModel, int, error) {
@@ -124,6 +129,8 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 			race_registrations.user_id,
 			race_registrations.status,
 			race_registrations.registered_at,
+			race_registrations.medical_certificate_id,
+			race_registrations.is_medical_certificate_approved,
 			users.username
 		FROM race_registrations
 		LEFT JOIN users ON users.id = race_registrations.user_id
@@ -135,9 +142,10 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 
 	for rows.Next() {
 		var registration RaceRegistrationModel
-		core.Expect(rows.Scan(&registration.UserId, &registration.Status, &registration.RegisteredAt, &registration.Username), "error scanning race_registrations")
+		core.Expect(rows.Scan(&registration.User.Id, &registration.Status, &registration.RegisteredAt, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved, &registration.User.Username), "error scanning race_registrations")
 		registration.Permissions = RaceRegistrationPermissionsModel{
-			CanApprove: racePermissions.CanApproveRegistrations && registration.Status == Registered,
+			CanApprove:                   racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.IsMedicalCertificateApproved,
+			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != nil && !registration.IsMedicalCertificateApproved,
 		}
 		registrations = append(registrations, registration)
 	}

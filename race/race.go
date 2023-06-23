@@ -64,6 +64,19 @@ func (race *Race) OpenForRegistration(maximumParticipants int) error {
 	return nil
 }
 
+func (race *Race) ApproveMedicalCertificate(userId core.ID) error {
+	registration, ok := race.Registrations[userId]
+	if !ok {
+		return errors.New("user is not registered")
+	}
+	if registration.MedicalCertificate == nil {
+		return errors.New("medical certificate is missing")
+	}
+	registration.IsMedicalCertificateApproved = true
+	race.Registrations[userId] = registration
+	return nil
+}
+
 func (race *Race) ApproveRegistration(userId core.ID) error {
 	registration, ok := race.Registrations[userId]
 	if !ok {
@@ -102,10 +115,6 @@ func (race *Race) UploadMedicalCertificate(userId core.ID, medicalCertificate co
 	return nil
 }
 
-func (race Race) CanApproveRegistration(user auth.User) bool {
-	return race.IsOpenForRegistration && lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
-}
-
-func (race Race) CanUpdateDescription(user auth.User) bool {
+func (race Race) IsOrganizer(user auth.User) bool {
 	return lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
 }

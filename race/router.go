@@ -30,6 +30,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
 	router.Post("/{raceId}/update_description", updateRaceDescriptionRoute(conn))
 	router.Post("/{raceId}/register", registerForRaceRoute(conn))
 	router.Post("/{raceId}/registrations/{userId}/approve", approveRaceRegistrationRoute(conn))
+	router.Post("/{raceId}/registrations/{userId}/approve_medical_certificate", approveRegistrationMedicalCertificateRoute(conn))
 
 	router.Get("/registrations", viewCurrentUserRegistrationsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/registrations.html"))))
 	router.Get("/{raceId}", viewRaceDetailsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/race.html"))))
@@ -125,6 +126,34 @@ func approveRaceRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		code, err := ApproveRaceRegistrationCommand(ctx, conn, raceId, userId)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+		} else {
+			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+		}
+	}
+}
+
+func approveRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing raceId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		userId, err := core.ParseID(chi.URLParam(r, "userId"))
+		if err != nil {
+			err = core.Wrap(err, "error parsing userId")
+			slog.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		code, err := ApproveRegistrationMedicalCertificateCommand(ctx, conn, raceId, userId)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {

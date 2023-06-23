@@ -1,13 +1,16 @@
 actions: Actions
 allUsers: All users
 approveButton: Approve
+approveMedicalCertificate_button: Approve medical certificate
 clearLabel: Clear
+documents: Documents
 hello: Hello %s
 homeNavLink: Home
 language: Language
 logInButton: Log in
 logOutButton: Log out
 maximumParticipants: Maximum participants
+medicalCertificate_download: Medical certificate
 medicalCertificateUploaded: Medical certificate uploaded
 notFound: This is not the page you are looking for
 openForRegistrationButton: Open for registration

@@ -124,10 +124,15 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	}
 	core.Expect(err, "")
 
-	if !race.CanApproveRegistration(currentUser) {
+	if !race.IsOrganizer(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err
+	}
+	if !race.IsOpenForRegistration {
+		err = errors.New("registration is closed")
+		logger.Warn(err.Error())
+		return http.StatusBadRequest, err
 	}
 	err = race.ApproveRegistration(userId)
 	if err != nil {
@@ -138,6 +143,39 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	core.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registration approved")
+	return http.StatusOK, nil
+}
+
+func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, userId core.ID) (int, error) {
+	logger := slog.With(slog.String("command", "ApproveRegistrationMedicalCertificateCommand"), slog.String("raceId", raceId.String()), slog.String("userId", userId.String()))
+	logger.Info("approving user registration medical certificate")
+	currentUser, ok := auth.UserFromContext(ctx)
+	if !ok {
+		err := errors.New("user not logged in")
+		logger.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	race, err := LoadRace(ctx, conn, raceId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		logger.Warn(err.Error())
+		return http.StatusNotFound, err
+	}
+	core.Expect(err, "")
+
+	if !race.IsOrganizer(currentUser) {
+		err = errors.New("user not an organizer")
+		logger.Warn(err.Error())
+		return http.StatusUnauthorized, err
+	}
+	err = race.ApproveMedicalCertificate(userId)
+	if err != nil {
+		err = core.Wrap(err, "error approving medical certificate")
+		logger.Warn(err.Error())
+		return http.StatusBadRequest, err
+	}
+	core.Expect(race.Save(ctx, conn), "")
+
+	logger.Info("user registration medical certificate approved")
 	return http.StatusOK, nil
 }
 
@@ -157,7 +195,7 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	}
 	core.Expect(err, "")
 
-	if !race.CanUpdateDescription(currentUser) {
+	if !race.IsOrganizer(currentUser) {
 		err = errors.New("user not an organizer")
 		logger.Warn(err.Error())
 		return http.StatusUnauthorized, err

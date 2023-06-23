@@ -15,5 +15,8 @@
   .btn-primary {
     @apply chip bg-blue-900 cursor-pointer hover:bg-blue-700
   }
+  .btn-secondary {
+    @apply rounded px-2 py-1 border border-blue-900 cursor-pointer hover:bg-blue-100
+  }
 }
 

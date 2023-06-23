@@ -51,6 +51,7 @@
       <tr>
         <th>{{ call .T "user" }}</th>
         <th>{{ call .T "registrationDate"}}</th>
+        <th>{{ call .T "documents" }}</th>
         <th>{{ call .T "status" }}</th>
         <th>{{ call .T "actions" }}</th>
       </tr>
@@ -58,13 +59,27 @@
     <tbody>
       {{range .Data.RaceRegistrations}}
       <tr>
-        <td>{{.Username}}</td>
+        <td>{{.User.Username}}</td>
         <td>{{.RegisteredAt.Format "Monday, January 2, 2006 at 15:04"}}</td>
+        <td>
+          {{if .MedicalCertificate}}
+          <a href="/media/files/{{.MedicalCertificate}}" class="btn-secondary"
+            download="{{.User.Username}}_medical_certificate.xlsx">{{ call $.T
+            "medicalCertificate_download"
+            }}</a>
+          {{end}}
+        </td>
         <td><span class="chip bg-green-700">{{.Status}}</span></td>
         <td>
           {{if .Permissions.CanApprove}}
-          <form action="/races/{{$.Data.Race.Id.String}}/registrations/{{.UserId.String}}/approve" method="post">
+          <form action="/races/{{$.Data.Race.Id.String}}/registrations/{{.User.Id.String}}/approve" method="post">
             <input type="submit" value={{ call $.T "approveButton" }} class="btn-primary">
+          </form>
+          {{end}}
+          {{if .Permissions.CanApproveMedicalCertificate}}
+          <form action="/races/{{$.Data.Race.Id.String}}/registrations/{{.User.Id.String}}/approve_medical_certificate"
+            method="post">
+            <input type="submit" value={{ call $.T "approveMedicalCertificate_button" }} class="btn-primary">
           </form>
           {{end}}
         </td>
