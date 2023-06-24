@@ -1,0 +1,18 @@
+name: Push action
+on: push
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: /home/runner/work/go
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - name: Install additional dependencies
+        run: |
+          go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Run git hooks
+        run: ./.githooks/pre-commit
