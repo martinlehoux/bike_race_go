@@ -67,7 +67,7 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			return
 		}
 		data.Data.RaceRegistrations = raceRegistrations
-		core.Expect(tpl.ExecuteTemplate(w, "race.html", data), "error executing template")
+		core.ExecuteTemplate(w, *tpl, "race.html", data)
 	}
 }
 
@@ -85,7 +85,7 @@ func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerF
 			return
 		}
 		data.Data.Races = races
-		core.Expect(tpl.ExecuteTemplate(w, "races.html", data), "error executing template")
+		core.ExecuteTemplate(w, *tpl, "races.html", data)
 	}
 }
 
@@ -103,7 +103,7 @@ func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool, tpl *template.Templat
 			return
 		}
 		data.Data.Registrations = registrations
-		core.Expect(tpl.ExecuteTemplate(w, "registrations.html", data), "error executing template")
+		core.ExecuteTemplate(w, *tpl, "registrations.html", data)
 	}
 }
 

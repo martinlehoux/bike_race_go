@@ -107,7 +107,7 @@ func main() {
 	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		data := auth.GetTemplateData(r, struct{}{})
-		core.Expect(indexTpl.ExecuteTemplate(w, "index.html", data), "error executing template")
+		core.ExecuteTemplate(w, *indexTpl, "index.html", data)
 	})
 
 	router.Mount("/users", auth.Router(conn, baseTpl, cookiesSecret))

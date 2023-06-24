@@ -47,13 +47,7 @@ func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc
 			return
 		}
 		data.Data.Users = users
-		err = tpl.ExecuteTemplate(w, "users.html", data)
-		if err != nil {
-			err = core.Wrap(err, "error executing template")
-			slog.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		core.ExecuteTemplate(w, *tpl, "users.html", data)
 	}
 }
 
@@ -64,13 +58,7 @@ func viewUserMeRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFun
 			Unauthorized(w, errors.New("not authenticated"))
 			return
 		}
-		err := tpl.ExecuteTemplate(w, "me.html", data)
-		if err != nil {
-			err = core.Wrap(err, "error executing template")
-			slog.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		core.ExecuteTemplate(w, *tpl, "me.html", data)
 	}
 }
 
