@@ -18,7 +18,8 @@ type userContext struct{}
 func Unauthorized(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusUnauthorized)
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		_, err = w.Write([]byte(err.Error()))
+		core.Expect(err, "error writing response")
 	}
 }
 

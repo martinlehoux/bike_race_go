@@ -254,7 +254,7 @@ func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxp
 	}
 	err = race.UploadMedicalCertificate(currentUser.Id, medicalCertificate)
 	if err != nil {
-		medicalCertificate.Delete() // TODO: handle error?
+		core.Expect(medicalCertificate.Delete(), "error deleting medical certificate")
 		err = core.Wrap(err, "error uploading medical certificate")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err

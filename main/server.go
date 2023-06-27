@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/go-chi/chi/v5"
@@ -120,5 +121,12 @@ func main() {
 	})
 
 	slog.Info("listening on http://localhost:3000")
-	http.ListenAndServe(":3000", router)
+	server := http.Server{
+		Addr:              ":3000",
+		WriteTimeout:      1 * time.Second,
+		ReadHeaderTimeout: 1 * time.Second,
+		Handler:           router,
+	}
+	err = server.ListenAndServe()
+	core.Expect(err, "error listening and serving")
 }
