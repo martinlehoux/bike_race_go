@@ -18,11 +18,11 @@ func NewID() ID {
 }
 
 func (id ID) String() string {
-	return base64.URLEncoding.EncodeToString(id.Bytes())
+	return base64.RawURLEncoding.EncodeToString(id.Bytes())
 }
 
 func ParseID(value string) (ID, error) {
-	bytes, err := base64.URLEncoding.DecodeString(value)
+	bytes, err := base64.RawURLEncoding.DecodeString(value)
 	if err != nil {
 		return ID{}, Wrap(err, "error decoding value")
 	}
