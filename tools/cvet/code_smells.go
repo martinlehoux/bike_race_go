@@ -2,7 +2,6 @@ package main
 
 import (
 	"go/ast"
-	"strings"
 
 	"github.com/samber/lo"
 	"golang.org/x/tools/go/analysis"
@@ -28,29 +27,16 @@ func isSelector(node ast.Node, left string, right string) bool {
 	return false
 }
 
-func checkQueryFunc(pass *analysis.Pass, node *ast.FuncDecl) {
-	if node.Type.Results.NumFields() != 3 {
-		pass.Reportf(node.Pos(), "query function must have 3 return values")
-	} else {
-		if !isIdent(node.Type.Results.List[1].Type, "int") {
-			pass.Reportf(node.Pos(), "query function must return an int code as the second return value")
-		}
-		if !isIdent(node.Type.Results.List[2].Type, "error") {
-			pass.Reportf(node.Pos(), "query function must return an error as the third return value")
-		}
-	}
-}
-
 func visit(pass *analysis.Pass) func(node ast.Node) bool {
 	return func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.CallExpr:
 			checkLogUsage(pass, node)
 		case *ast.FuncDecl:
-			if strings.HasSuffix(node.Name.Name, "Query") {
+			if isQueryFunc(node) {
 				checkQueryFunc(pass, node)
 			}
-			if strings.HasSuffix(node.Name.Name, "Command") {
+			if isCommandFunc(node) {
 				checkCommandFunc(pass, node)
 			}
 			if field, ok := lo.Find(node.Type.Params.List, func(field *ast.Field) bool {
