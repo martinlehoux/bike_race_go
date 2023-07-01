@@ -22,15 +22,6 @@ COOKIE_SECRET=`head -c32 </dev/urandom | xxd -p -u`
 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318
 ```
 
-## Images
-
-- https://pkg.go.dev/image
-- https://go.dev/blog/image
-- https://go.dev/blog/image-draw
-- image url better id? but hard with pointer
-- https://kurtextrem.de/posts/modern-way-of-img
-- https://web.dev/image-cdns/
-
 ## Logging
 
 - https://betterstack.com/community/guides/logging/logging-in-go/
@@ -40,8 +31,6 @@ OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318
 ## Features
 
 - new way to handle start date (`race.StartAt, err = time.ParseInLocation("2006-01-02T15:04", r.FormValue("start_at"), paris)`)
-- redirect to previous url on login
-- navbar current url
 
 ## Linter
 
