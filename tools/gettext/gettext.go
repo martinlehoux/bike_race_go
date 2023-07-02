@@ -82,7 +82,7 @@ func extractKeys(content string) map[string]int {
 	extractedKeys := make(map[string]int, 0)
 	reg, err := regexp.Compile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
 	core.Expect(err, "error compiling regexp")
-	matches := reg.FindAllStringSubmatch(string(content), -1)
+	matches := reg.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		key := match[1]
 		args := strings.TrimSpace(match[2])
