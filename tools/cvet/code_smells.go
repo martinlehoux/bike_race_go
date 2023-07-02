@@ -60,5 +60,5 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, visit(pass))
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil
 }
