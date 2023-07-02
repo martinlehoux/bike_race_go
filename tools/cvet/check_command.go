@@ -16,27 +16,31 @@ func isCommandFunc(node *ast.FuncDecl) bool {
 
 func loggerCommandKeyValueArgFinder(pass *analysis.Pass, commandName string) func(arg ast.Expr) bool {
 	return func(arg ast.Expr) bool {
-		if call, ok := arg.(*ast.CallExpr); ok {
-			if firstArg, ok := call.Args[0].(*ast.BasicLit); ok {
-				if firstArg.Kind == token.STRING && firstArg.Value == `"command"` {
-					secondArg, ok := call.Args[1].(*ast.BasicLit)
-					if !ok {
-						pass.Reportf(arg.Pos(), "logger command name must be a literal")
-						return true
-					}
-					if secondArg.Kind != token.STRING {
-						pass.Reportf(arg.Pos(), "logger command name must be a string literal")
-						return true
-					}
-
-					value := secondArg.Value[1 : len(secondArg.Value)-1]
-					if value != commandName {
-						pass.Reportf(arg.Pos(), fmt.Sprintf("logger command name must be function name %s, but found %s", commandName, value))
-						return true
-					}
-					return true
-				}
+		call, ok := arg.(*ast.CallExpr)
+		if !ok {
+			return false
+		}
+		firstArg, ok := call.Args[0].(*ast.BasicLit)
+		if !ok {
+			return false
+		}
+		if firstArg.Kind == token.STRING && firstArg.Value == `"command"` {
+			secondArg, ok := call.Args[1].(*ast.BasicLit)
+			if !ok {
+				pass.Reportf(arg.Pos(), "logger command name must be a literal")
+				return true
 			}
+			if secondArg.Kind != token.STRING {
+				pass.Reportf(arg.Pos(), "logger command name must be a string literal")
+				return true
+			}
+
+			value := secondArg.Value[1 : len(secondArg.Value)-1]
+			if value != commandName {
+				pass.Reportf(arg.Pos(), fmt.Sprintf("logger command name must be function name %s, but found %s", commandName, value))
+				return true
+			}
+			return true
 		}
 
 		return false
