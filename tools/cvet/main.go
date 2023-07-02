@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	multichecker.Main(CodeSmellsAnalyzer)
+	multichecker.Main(codeSmellsAnalyzer)
 }

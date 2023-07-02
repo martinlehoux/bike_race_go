@@ -96,7 +96,7 @@ func extractKeys(content string) map[string]int {
 func extractAllKeys() map[string]int {
 	extractedKeys := make(map[string]int, 0)
 
-	filepath.Walk("templates", func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk("templates", func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() && filepath.Ext(path) == ".html" {
 			content, err := os.ReadFile(path)
 			core.Expect(err, "error reading file")
@@ -106,6 +106,7 @@ func extractAllKeys() map[string]int {
 		}
 		return nil
 	})
+	core.Expect(err, "error walking templates directory")
 
 	return extractedKeys
 }

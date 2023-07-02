@@ -79,5 +79,9 @@ func (race *Race) Save(ctx context.Context, conn *pgxpool.Pool) error {
 			return core.Wrap(err, "error upserting race_registrations table")
 		}
 	}
-	return tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return core.Wrap(err, "error committing transaction")
+	}
+	return nil
 }

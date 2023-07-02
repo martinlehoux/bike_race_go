@@ -35,7 +35,7 @@ func CookieAuthMiddleware(conn *pgxpool.Pool, config config.Config) func(http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			cookie, err := r.Cookie("authentication")
-			if err == http.ErrNoCookie {
+			if errors.Is(err, http.ErrNoCookie) {
 				next.ServeHTTP(w, r)
 				return
 			}

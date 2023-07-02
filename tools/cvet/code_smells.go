@@ -7,7 +7,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-var CodeSmellsAnalyzer = &analysis.Analyzer{
+var codeSmellsAnalyzer = &analysis.Analyzer{
 	Name: "logging",
 	Doc:  "Logging best practices",
 	Run:  run,

@@ -100,7 +100,7 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 		CanApproveRegistrations: isCurrentUserOrganizer,
 		CanUpdateDescription:    isCurrentUserOrganizer,
 	}
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return race, http.StatusNotFound, ErrRaceNotFound
 	}
 	core.Expect(err, "error querying race")

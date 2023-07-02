@@ -3,6 +3,7 @@ package race
 import (
 	"bike_race/auth"
 	"bike_race/core"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -225,7 +226,7 @@ func updateRaceDescriptionRoute(conn *pgxpool.Pool) http.HandlerFunc {
 		}
 		clearCoverImage := r.FormValue("clear_cover_image")
 		coverImageFile, _, err := r.FormFile("cover_image")
-		if err != nil && err != http.ErrMissingFile {
+		if err != nil && !errors.Is(err, http.ErrMissingFile) {
 			err = core.Wrap(err, "error parsing cover_image")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)

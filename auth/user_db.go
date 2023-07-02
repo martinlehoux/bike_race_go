@@ -20,7 +20,7 @@ func LoadUser(ctx context.Context, conn *pgxpool.Pool, userId core.ID) (User, er
 		FROM users
 		WHERE id = $1
 	`, userId).Scan(&user.Id, &user.Username, &user.PasswordHash, &user.Language)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrUserNotFound
 	} else if err != nil {
 		return User{}, core.Wrap(err, "error querying user")
@@ -34,5 +34,8 @@ func (user *User) Save(ctx context.Context, conn *pgxpool.Pool) error {
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (id) DO UPDATE SET username = $2, password_hash = $3, language = $4
 	`, user.Id, user.Username, user.PasswordHash, user.Language)
-	return err
+	if err != nil {
+		return core.Wrap(err, "error inserting user table")
+	}
+	return nil
 }

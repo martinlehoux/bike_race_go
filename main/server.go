@@ -47,7 +47,7 @@ func main() {
 	core.Expect(err, "error creating exporter")
 	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(exporter), trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName("bike_race"))))
 	otel.SetTracerProvider(tracerProvider)
-	defer tracerProvider.Shutdown(ctx)
+	defer tracerProvider.Shutdown(ctx) //nolint:errcheck
 
 	router := chi.NewRouter()
 	router.Use(core.RecoverMiddleware)
