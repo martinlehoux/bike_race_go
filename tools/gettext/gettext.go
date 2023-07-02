@@ -80,8 +80,7 @@ func (p ArgsParser) ArgsCount() int {
 
 func extractKeys(content string) map[string]int {
 	extractedKeys := make(map[string]int, 0)
-	reg, err := regexp.Compile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
-	core.Expect(err, "error compiling regexp")
+	reg := regexp.MustCompile(`\{\{\s*call \$?\.T\s*"(\w+)"([\w.\s",:()]*)}}`)
 	matches := reg.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		key := match[1]
@@ -133,14 +132,15 @@ func main() {
 		for key, translation := range currentLocales {
 			currentArgsCount := strings.Count(translation, "%")
 			expectedArgsCount, ok := extractedKeys[key]
-			if !ok {
+			switch {
+			case !ok:
 				logger.Info(`found unused key`, slog.String("key", key))
-			} else if currentArgsCount != extractedKeys[key] {
+			case currentArgsCount != expectedArgsCount:
 				logger.Info(`found translation with incorrect number of arguments`, slog.String("key", key), slog.Int("current", currentArgsCount), slog.Int("expected", expectedArgsCount))
 				newLocales[key] = ""
-			} else if translation == "" {
+			case translation == "":
 				newLocales[key] = ""
-			} else {
+			default:
 				newLocales[key] = currentLocales[key]
 				correctLocales++
 			}

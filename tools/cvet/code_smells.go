@@ -45,7 +45,7 @@ func visit(pass *analysis.Pass) func(node ast.Node) bool {
 				if field != node.Type.Params.List[0] {
 					pass.Reportf(node.Pos(), "context.Context must be the first parameter")
 				}
-				if (*field).Names[0].Name != "ctx" {
+				if field.Names[0].Name != "ctx" {
 					pass.Reportf(node.Pos(), "context.Context parameter must be named ctx")
 				}
 			}
