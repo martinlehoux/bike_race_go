@@ -16,7 +16,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func Router(conn *pgxpool.Pool, baseTpl *template.Template) chi.Router {
+func Router(conn *pgxpool.Pool, baseTpl *template.Template) *chi.Mux {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
@@ -47,7 +47,6 @@ type RaceTemplateData struct {
 
 func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data := auth.GetTemplateData(r, RaceTemplateData{})
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
@@ -60,13 +59,15 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data.Data.Race = raceDetail
-		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId, data.Data.Race.Permissions)
+		raceRegistrations, code, err := RaceRegistrationsQuery(ctx, conn, raceId, raceDetail.Permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data.Data.RaceRegistrations = raceRegistrations
+		data := auth.GetTemplateData(r, RaceTemplateData{
+			Race:              raceDetail,
+			RaceRegistrations: raceRegistrations,
+		})
 		core.ExecuteTemplate(w, *tpl, "race.html", data)
 	}
 }
@@ -78,12 +79,12 @@ type RacesTemplateData struct {
 func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		data := auth.GetTemplateData(r, RacesTemplateData{})
 		races, code, err := RaceListQuery(ctx, conn)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
+		data := auth.GetTemplateData(r, RacesTemplateData{Races: races})
 		data.Data.Races = races
 		core.ExecuteTemplate(w, *tpl, "races.html", data)
 	}
@@ -96,13 +97,14 @@ type CurrentUserRegistrationsTemplateData struct {
 func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		data := auth.GetTemplateData(r, CurrentUserRegistrationsTemplateData{})
 		registrations, code, err := CurrentUserRegistrationsQuery(ctx, conn)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data.Data.Registrations = registrations
+		data := auth.GetTemplateData(r, CurrentUserRegistrationsTemplateData{
+			Registrations: registrations,
+		})
 		core.ExecuteTemplate(w, *tpl, "registrations.html", data)
 	}
 }

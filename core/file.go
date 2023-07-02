@@ -30,5 +30,9 @@ func (file *File) Save(raw multipart.File) error {
 }
 
 func (file *File) Delete() error {
-	return os.Remove(file.Path())
+	err := os.Remove(file.Path())
+	if err != nil {
+		return Wrap(err, "error deleting file")
+	}
+	return nil
 }

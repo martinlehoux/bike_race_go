@@ -9,6 +9,10 @@ import (
 	"errors"
 )
 
+var (
+	ErrEncryptedTooShort = errors.New("encrypted text is too short")
+)
+
 func encrypt(secret []byte, plainText string) string {
 	block, err := aes.NewCipher(secret)
 	core.Expect(err, "error creating AES cipher")
@@ -37,8 +41,7 @@ func decrypt(secret []byte, encryptedText string) (string, error) {
 
 	nonceSize := aead.NonceSize()
 	if len(encryptedBytes) < nonceSize {
-		err = errors.New("encrypted text is too short")
-		return "", err
+		return "", ErrEncryptedTooShort
 	}
 	nonce, cipherText := encryptedBytes[:nonceSize], encryptedBytes[nonceSize:]
 	plainBytes, err := aead.Open(nil, nonce, cipherText, nil)

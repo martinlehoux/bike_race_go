@@ -13,6 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	ErrRaceNotFound = errors.New("race not found")
+)
+
 type RaceListModel struct {
 	Id                    core.ID
 	Name                  string
@@ -97,8 +101,7 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 		CanUpdateDescription:    isCurrentUserOrganizer,
 	}
 	if err == pgx.ErrNoRows {
-		err = errors.New("race not found")
-		return race, http.StatusNotFound, err
+		return race, http.StatusNotFound, ErrRaceNotFound
 	}
 	core.Expect(err, "error querying race")
 
@@ -168,8 +171,7 @@ type UserRegistrationModel struct {
 func CurrentUserRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool) ([]UserRegistrationModel, int, error) {
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		return nil, http.StatusUnauthorized, err
+		return nil, http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	registrations := []UserRegistrationModel{}
 	rows, err := conn.Query(ctx, `

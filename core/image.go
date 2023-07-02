@@ -30,5 +30,9 @@ func (image *Image) Save(raw multipart.File) error {
 }
 
 func (image *Image) Delete() error {
-	return os.Remove(image.Path())
+	err := os.Remove(image.Path())
+	if err != nil {
+		return Wrap(err, "error deleting image")
+	}
+	return nil
 }

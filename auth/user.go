@@ -7,6 +7,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	ErrBadPassword          = errors.New("incorrect password")
+	ErrUserUsernameTooShort = errors.New("username must be at least 3 characters")
+)
+
 type User struct {
 	Id           core.ID
 	Username     string
@@ -17,7 +22,7 @@ type User struct {
 func NewUser(username string) (User, error) {
 	var user User
 	if len(username) < 3 {
-		return user, errors.New("username must be at least 3 characters")
+		return user, ErrUserUsernameTooShort
 	}
 	user.Id = core.NewID()
 	user.Username = username
@@ -27,11 +32,11 @@ func NewUser(username string) (User, error) {
 
 func (user *User) SetPassword(oldPassword string, newPassword string) error {
 	if user.PasswordHash != nil && bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(oldPassword)) != nil {
-		return errors.New("incorrect password")
+		return ErrBadPassword
 	}
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return core.Wrap(err, "failed to generate password hash")
 	}
 	user.PasswordHash = newPasswordHash
 	return nil

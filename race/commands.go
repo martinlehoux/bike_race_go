@@ -14,13 +14,16 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+var (
+	ErrUserNotOrganizer = errors.New("user not an organizer")
+)
+
 func OrganizeRaceCommand(ctx context.Context, conn *pgxpool.Pool, name string) (int, error) {
 	logger := slog.With(slog.String("command", "OrganizeRaceCommand"))
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	race, err := NewRace(name)
 	if err != nil {
@@ -48,9 +51,8 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 	logger.Info("opening race for registration")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		slog.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		slog.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", currentUser.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
@@ -61,9 +63,8 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 	core.Expect(err, "")
 
 	if !lo.ContainsBy(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }) {
-		err = errors.New("user not an organizer")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(ErrUserNotOrganizer.Error())
+		return http.StatusUnauthorized, ErrUserNotOrganizer
 	}
 
 	err = race.OpenForRegistration(maximumParticipants)
@@ -83,9 +84,8 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core
 	logger := slog.With(slog.String("command", "RegisterForRaceCommand"), slog.String("raceId", raceId.String()))
 	user, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", user.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
@@ -113,9 +113,8 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	logger.Info("approving user registration")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -125,14 +124,12 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	core.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
-		err = errors.New("user not an organizer")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(ErrUserNotOrganizer.Error())
+		return http.StatusUnauthorized, ErrUserNotOrganizer
 	}
 	if !race.IsOpenForRegistration {
-		err = errors.New("registration is closed")
-		logger.Warn(err.Error())
-		return http.StatusBadRequest, err
+		logger.Warn(ErrRegistrationsClosed.Error())
+		return http.StatusBadRequest, ErrRegistrationsClosed
 	}
 	err = race.ApproveRegistration(userId)
 	if err != nil {
@@ -151,9 +148,8 @@ func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgx
 	logger.Info("approving user registration medical certificate")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -163,9 +159,8 @@ func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgx
 	core.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
-		err = errors.New("user not an organizer")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(ErrUserNotOrganizer.Error())
+		return http.StatusUnauthorized, ErrUserNotOrganizer
 	}
 	err = race.ApproveMedicalCertificate(userId)
 	if err != nil {
@@ -184,9 +179,8 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	logger.Info("updating race description")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -196,9 +190,8 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	core.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
-		err = errors.New("user not an organizer")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(ErrUserNotOrganizer.Error())
+		return http.StatusUnauthorized, ErrUserNotOrganizer
 	}
 
 	if clearCoverImage && race.CoverImage != nil {
@@ -233,9 +226,8 @@ func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxp
 	logger.Info("uploading registration medical certificate")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		err := errors.New("user not logged in")
-		logger.Warn(err.Error())
-		return http.StatusUnauthorized, err
+		logger.Warn(auth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", currentUser.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)

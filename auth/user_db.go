@@ -9,6 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	ErrUserNotFound = errors.New("user not found")
+)
+
 func LoadUser(ctx context.Context, conn *pgxpool.Pool, userId core.ID) (User, error) {
 	var user User
 	err := conn.QueryRow(ctx, `
@@ -17,7 +21,7 @@ func LoadUser(ctx context.Context, conn *pgxpool.Pool, userId core.ID) (User, er
 		WHERE id = $1
 	`, userId).Scan(&user.Id, &user.Username, &user.PasswordHash, &user.Language)
 	if err == pgx.ErrNoRows {
-		return User{}, errors.New("user not found")
+		return User{}, ErrUserNotFound
 	} else if err != nil {
 		return User{}, core.Wrap(err, "error querying user")
 	}

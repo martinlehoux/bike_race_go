@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bike_race/config"
 	"bike_race/core"
 	"context"
 	"errors"
@@ -16,15 +17,19 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+var (
+	ErrNotAuthenticated = errors.New("not authenticated")
+)
+
 type UsersTemplateData struct {
 	Users []UserListModel
 }
 
-func Router(conn *pgxpool.Pool, baseTpl *template.Template, cookiesSecret []byte) chi.Router {
+func Router(conn *pgxpool.Pool, baseTpl *template.Template, config config.Config) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Post("/register", registerRoute(conn))
-	router.Post("/log_in", logInRoute(conn, cookiesSecret))
+	router.Post("/log_in", logInRoute(conn, config))
 	router.Post("/log_out", logOutRoute())
 
 	router.Get("/me", viewUserMeRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/me.html"))))
@@ -38,7 +43,7 @@ func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc
 		ctx := r.Context()
 		data := GetTemplateData(r, UsersTemplateData{})
 		if !data.Ok {
-			Unauthorized(w, errors.New("not authenticated"))
+			Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
 		users, code, err := UserListQuery(ctx, conn)
@@ -55,7 +60,7 @@ func viewUserMeRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := GetTemplateData(r, struct{}{})
 		if !data.Ok {
-			Unauthorized(w, errors.New("not authenticated"))
+			Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
 		core.ExecuteTemplate(w, *tpl, "me.html", data)
@@ -74,7 +79,7 @@ func registerRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	}
 }
 
-func logInRoute(conn *pgxpool.Pool, cookiesSecret []byte) http.HandlerFunc {
+func logInRoute(conn *pgxpool.Pool, config config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		user, code, err := AuthenticateUser(ctx, conn, r.FormValue("username"), r.FormValue("password"))
@@ -83,8 +88,9 @@ func logInRoute(conn *pgxpool.Pool, cookiesSecret []byte) http.HandlerFunc {
 			return
 		} else {
 			expiresAt := time.Now().Add(24 * time.Hour)
-			cookieValue := encrypt(cookiesSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
+			cookieValue := encrypt(config.CookieSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
 			http.SetCookie(w, &http.Cookie{
+				Domain:  config.Domain,
 				Name:    "authentication",
 				Value:   cookieValue,
 				Expires: expiresAt,
@@ -100,7 +106,7 @@ func logOutRoute() http.HandlerFunc {
 		ctx := r.Context()
 		_, ok := UserFromContext(ctx)
 		if !ok {
-			Unauthorized(w, errors.New("not authenticated"))
+			Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
@@ -122,17 +128,15 @@ func AuthenticateUser(ctx context.Context, conn *pgxpool.Pool, username string, 
 		WHERE username = $1
 	`, username).Scan(&user.Id, &user.Username, &user.PasswordHash)
 	if err == pgx.ErrNoRows {
-		err = errors.New("user not found")
-		slog.Warn(err.Error())
-		return User{}, http.StatusNotFound, err
+		slog.Warn(ErrUserNotFound.Error())
+		return User{}, http.StatusNotFound, ErrUserNotFound
 	}
 	core.Expect(err, "error querying user")
 
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		err = errors.New("incorrect password")
-		slog.Warn(err.Error())
-		return User{}, http.StatusBadRequest, err
+		slog.Warn(ErrBadPassword.Error())
+		return User{}, http.StatusBadRequest, ErrBadPassword
 	}
 	core.Expect(err, "error comparing password hash")
 
