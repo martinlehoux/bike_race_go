@@ -32,7 +32,7 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template, config config.Config
 	router.Post("/log_in", logInRoute(conn, config))
 	router.Post("/log_out", logOutRoute())
 
-	router.Get("/me", viewUserMeRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/me.html"))))
+	router.Get("/me", viewUserMeRoute(template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/me.html"))))
 	router.Get("/", viewUsersRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))))
 
 	return router
@@ -56,7 +56,7 @@ func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc
 	}
 }
 
-func viewUserMeRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+func viewUserMeRoute(tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := GetTemplateData(r, struct{}{})
 		if !data.Ok {

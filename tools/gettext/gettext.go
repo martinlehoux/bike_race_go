@@ -158,7 +158,7 @@ func main() {
 		if *write {
 			content, err := yaml.Marshal(newLocales)
 			core.Expect(err, "error marshalling yaml")
-			core.Expect(os.WriteFile(filepath.Join("locales", lang, "index.yml"), content, 0644), "error writing file")
+			core.Expect(os.WriteFile(filepath.Join("locales", lang, "index.yml"), content, 0600), "error writing file")
 		}
 	}
 }
