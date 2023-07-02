@@ -16,7 +16,6 @@ func isCommandFunc(node *ast.FuncDecl) bool {
 
 func loggerCommandKeyValueArgFinder(pass *analysis.Pass, commandName string) func(arg ast.Expr) bool {
 	return func(arg ast.Expr) bool {
-
 		if call, ok := arg.(*ast.CallExpr); ok {
 			if firstArg, ok := call.Args[0].(*ast.BasicLit); ok {
 				if firstArg.Kind == token.STRING && firstArg.Value == `"command"` {

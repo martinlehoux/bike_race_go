@@ -21,7 +21,6 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 				default:
 					panic(err)
 				}
-
 			}
 		}()
 
