@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kataras/i18n"
+	"github.com/riandyrn/otelchi"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -23,14 +24,24 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func tracerMiddleware(next http.Handler) http.Handler {
-	tracer := otel.Tracer("tracer")
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx, span := tracer.Start(ctx, r.URL.Path)
-		defer span.End()
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func getTracerProvider(ctx context.Context, serviceName string) *trace.TracerProvider {
+	// version, env, ...
+	providerResource, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName(serviceName)),
+	)
+	core.Expect(err, "error creating resource")
+
+	httpClient := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")), otlptracehttp.WithInsecure())
+	httpExporter, err := otlptrace.New(ctx, httpClient)
+	core.Expect(err, "error creating exporter")
+
+	return trace.NewTracerProvider(
+		trace.WithBatcher(httpExporter,
+			trace.WithMaxQueueSize(1), // Dev only
+		),
+		trace.WithResource(providerResource),
+	)
 }
 
 func main() {
@@ -42,16 +53,14 @@ func main() {
 	defer conn.Close()
 	baseTpl := template.Must(template.New("").ParseGlob("templates/base/*.html"))
 
-	client := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")), otlptracehttp.WithInsecure())
-	exporter, err := otlptrace.New(ctx, client)
-	core.Expect(err, "error creating exporter")
-	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(exporter), trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName("bike_race"))))
+	serviceName := "bike_race"
+	tracerProvider := getTracerProvider(ctx, serviceName)
 	otel.SetTracerProvider(tracerProvider)
 	defer tracerProvider.Shutdown(ctx) //nolint:errcheck
 
 	router := chi.NewRouter()
 	router.Use(core.RecoverMiddleware)
-	router.Use(tracerMiddleware)
+	router.Use(otelchi.Middleware(serviceName)) // otelchi.WithChiRoutes(router)
 	router.Use(auth.CookieAuthMiddleware(conn, conf))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
@@ -80,6 +89,6 @@ func main() {
 		ReadHeaderTimeout: 1 * time.Second,
 		Handler:           router,
 	}
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	core.Expect(err, "error listening and serving")
 }

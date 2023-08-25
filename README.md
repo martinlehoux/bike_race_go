@@ -29,6 +29,11 @@ OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318
 - Use .WithGroup() to keep additional data in subgroup
 - Switch to JSON in prod
 
+## Tracing
+
+- https://github.com/open-telemetry/opentelemetry-go-contrib
+- https://opentelemetry.io/ecosystem/registry/?language=go&component=instrumentation
+
 ## Features
 
 - new way to handle start date (`race.StartAt, err = time.ParseInLocation("2006-01-02T15:04", r.FormValue("start_at"), paris)`)
