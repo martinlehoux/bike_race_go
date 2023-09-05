@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.16.0
 	golang.org/x/crypto v0.12.0
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
-	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846
+	golang.org/x/tools 229f8486be03
 	gopkg.in/yaml.v3 v3.0.1
 )
 
