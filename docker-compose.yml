@@ -22,7 +22,7 @@ services:
       - ./tempo.yaml:/etc/tempo.yaml:Z
       - tempo:/tmp/tempo
   grafana:
-    image: grafana/grafana:10.1.1
+    image: grafana/grafana:10.1.2
     volumes:
       - ./grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
     environment:
