@@ -30,7 +30,7 @@ func LoadUser(ctx context.Context, conn *pgxpool.Pool, userId core.ID) (User, er
 
 func (user *User) Save(ctx context.Context, conn *pgxpool.Pool) error {
 	_, err := conn.Exec(ctx, `
-		INSERT INTO users (id, username, password_hash)
+		INSERT INTO users (id, username, password_hash, language)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (id) DO UPDATE SET username = $2, password_hash = $3, language = $4
 	`, user.Id, user.Username, user.PasswordHash, user.Language)
