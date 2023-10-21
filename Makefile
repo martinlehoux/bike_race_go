@@ -1,2 +1,2 @@
 tailwind:
-	cd webapp && npx tailwindcss -i ../static/base.css -o ../static/index.css --watch
+	cd webapp && npx tailwindcss -i ./base.css -o ../static/index.css --watch
