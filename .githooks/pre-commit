@@ -1,6 +1,7 @@
 #!/bin/sh
 set -ev
 
+templ generate
 gofmt -d -e -s .
 go vet ./...
 go run ./tools/cvet ./...
@@ -10,4 +11,3 @@ gocyclo -over 10 -ignore '.*_templ\.go' .
 golangci-lint run
 go test ./...
 go mod tidy
-templ generate
