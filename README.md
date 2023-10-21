@@ -54,6 +54,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318
 
 ## TODO
 
+- Speedup CI with cache of deps
 - Allow to change lang
 - https://go.dev/doc/go1.21
 - try to split external styling (width, margin, ...) from internal (row, color, padding, ...)
