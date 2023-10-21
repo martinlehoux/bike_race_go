@@ -5,7 +5,6 @@ import (
 	"bike_race/core"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func Router(conn *pgxpool.Pool, baseTpl *template.Template) *chi.Mux {
+func Router(conn *pgxpool.Pool) *chi.Mux {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
@@ -34,9 +33,9 @@ func Router(conn *pgxpool.Pool, baseTpl *template.Template) *chi.Mux {
 	router.Post("/{raceId}/registrations/{userId}/approve", approveRaceRegistrationRoute(conn))
 	router.Post("/{raceId}/registrations/{userId}/approve_medical_certificate", approveRegistrationMedicalCertificateRoute(conn))
 
-	router.Get("/registrations", viewCurrentUserRegistrationsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/registrations.html"))))
-	router.Get("/{raceId}", viewRaceDetailsRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/race.html"))))
-	router.Get("/", viewRaceListRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/races.html"))))
+	router.Get("/registrations", viewCurrentUserRegistrationsRoute(conn))
+	router.Get("/{raceId}", viewRaceDetailsRoute(conn))
+	router.Get("/", viewRaceListRoute(conn))
 
 	return router
 }
@@ -46,7 +45,7 @@ type RaceTemplateData struct {
 	RaceRegistrations []RaceRegistrationModel
 }
 
-func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+func viewRaceDetailsRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
@@ -65,11 +64,9 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool, tpl *template.Template) http.Handl
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data := auth.GetTemplateData(r, RaceTemplateData{
-			Race:              raceDetail,
-			RaceRegistrations: raceRegistrations,
-		})
-		core.ExecuteTemplate(w, *tpl, "race.html", data)
+		lc := auth.GetLoginContext(r)
+		page := RacePage(lc, raceDetail, raceRegistrations)
+		core.RenderPage(r.Context(), page, w)
 	}
 }
 
@@ -77,7 +74,7 @@ type RacesTemplateData struct {
 	Races []RaceListModel
 }
 
-func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+func viewRaceListRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		races, code, err := RaceListQuery(ctx, conn)
@@ -85,9 +82,9 @@ func viewRaceListRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerF
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data := auth.GetTemplateData(r, RacesTemplateData{Races: races})
-		data.Data.Races = races
-		core.ExecuteTemplate(w, *tpl, "races.html", data)
+		lc := auth.GetLoginContext(r)
+		page := RacesPage(lc, races)
+		core.RenderPage(r.Context(), page, w)
 	}
 }
 
@@ -95,7 +92,7 @@ type CurrentUserRegistrationsTemplateData struct {
 	Registrations []UserRegistrationModel
 }
 
-func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		registrations, code, err := CurrentUserRegistrationsQuery(ctx, conn)
@@ -103,10 +100,9 @@ func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool, tpl *template.Templat
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data := auth.GetTemplateData(r, CurrentUserRegistrationsTemplateData{
-			Registrations: registrations,
-		})
-		core.ExecuteTemplate(w, *tpl, "registrations.html", data)
+		lc := auth.GetLoginContext(r)
+		page := RegistrationsPage(lc, registrations)
+		core.RenderPage(r.Context(), page, w)
 	}
 }
 

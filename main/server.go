@@ -6,7 +6,6 @@ import (
 	"bike_race/core"
 	"bike_race/race"
 	"context"
-	"html/template"
 	"net/http"
 	"os"
 	"time"
@@ -51,7 +50,6 @@ func main() {
 	conf := config.LoadConfig()
 	conn := config.LoadDatabasePool(ctx, conf)
 	defer conn.Close()
-	baseTpl := template.Must(template.New("").ParseGlob("templates/base/*.html"))
 
 	serviceName := "bike_race"
 	tracerProvider := getTracerProvider(ctx, serviceName)
@@ -67,19 +65,19 @@ func main() {
 	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	router.Handle("/media/*", http.StripPrefix("/media/", http.FileServer(http.Dir("media"))))
 
-	indexTpl := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/index.html"))
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		data := auth.GetTemplateData(r, struct{}{})
-		core.ExecuteTemplate(w, *indexTpl, "index.html", data)
+		lc := auth.GetLoginContext(r)
+		page := IndexPage(lc)
+		core.RenderPage(r.Context(), page, w)
 	})
 
-	router.Mount("/users", auth.Router(conn, baseTpl, conf))
-	router.Mount("/races", race.Router(conn, baseTpl))
+	router.Mount("/users", auth.Router(conn, conf))
+	router.Mount("/races", race.Router(conn))
 
-	tpl404 := template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/404.html"))
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		data := auth.GetTemplateData(r, struct{}{})
-		core.Expect(tpl404.ExecuteTemplate(w, "404.html", data), "error executing template")
+		lc := auth.GetLoginContext(r)
+		page := NotFoundPage(lc)
+		core.RenderPage(r.Context(), page, w)
 	})
 
 	slog.Info("listening on http://localhost:3000")

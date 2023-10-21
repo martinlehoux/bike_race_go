@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"time"
 
@@ -21,28 +20,24 @@ var (
 	ErrNotAuthenticated = errors.New("not authenticated")
 )
 
-type UsersTemplateData struct {
-	Users []UserListModel
-}
-
-func Router(conn *pgxpool.Pool, baseTpl *template.Template, config config.Config) *chi.Mux {
+func Router(conn *pgxpool.Pool, config config.Config) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Post("/register", registerRoute(conn))
 	router.Post("/log_in", logInRoute(conn, config))
 	router.Post("/log_out", logOutRoute())
 
-	router.Get("/me", viewUserMeRoute(template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/me.html"))))
-	router.Get("/", viewUsersRoute(conn, template.Must(template.Must(baseTpl.Clone()).ParseFiles("templates/users.html"))))
+	router.Get("/me", viewUserMeRoute())
+	router.Get("/", viewUsersRoute(conn))
 
 	return router
 }
 
-func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc {
+func viewUsersRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		data := GetTemplateData(r, UsersTemplateData{})
-		if !data.Ok {
+		lc := GetLoginContext(r)
+		if !lc.LoggedIn {
 			Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
@@ -51,19 +46,20 @@ func viewUsersRoute(conn *pgxpool.Pool, tpl *template.Template) http.HandlerFunc
 			http.Error(w, err.Error(), code)
 			return
 		}
-		data.Data.Users = users
-		core.ExecuteTemplate(w, *tpl, "users.html", data)
+		page := UsersPage(users, lc)
+		core.RenderPage(ctx, page, w)
 	}
 }
 
-func viewUserMeRoute(tpl *template.Template) http.HandlerFunc {
+func viewUserMeRoute() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data := GetTemplateData(r, struct{}{})
-		if !data.Ok {
+		lc := GetLoginContext(r)
+		if !lc.LoggedIn {
 			Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
-		core.ExecuteTemplate(w, *tpl, "me.html", data)
+		page := MePage(lc)
+		core.RenderPage(r.Context(), page, w)
 	}
 }
 

@@ -1,6 +1,0 @@
-{{ template "layout.html" . }}
-
-{{ define "content" }}
-<h1>{{ call .T "profile" }}</h1>
-<p>{{ call .T "language" }}: {{call .T (print "language_" .CurrentUser.Language)}}</p>
-{{ end }}

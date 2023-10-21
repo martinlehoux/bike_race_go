@@ -1,0 +1,139 @@
+package race
+
+import "bike_race/auth"
+import "bike_race/templates"
+import "fmt"
+import "strconv"
+import "bike_race/core"
+
+func raceAction(raceId core.ID, action string) string {
+	return fmt.Sprintf("/races/%s/%s", raceId.String(), action)
+}
+
+func raceRegistrationAction(raceId core.ID, userId core.ID, action string) string {
+	return fmt.Sprintf("/races/%s/registrations/%s/%s", raceId.String(), userId.String(), action)
+}
+
+func imageSrc(image string) string {
+	return fmt.Sprintf("/media/images/%s", image)
+}
+
+func fileHref(file string) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/media/files/%s", file))
+}
+
+templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []RaceRegistrationModel) {
+	<html>
+		@templates.Head()
+		<body>
+			<main class="flex flex-col mx-4 items-center">
+				<h1 class="text-xl font-bold text-blue-900 mt-4">{ race.Name }</h1>
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 justify-start">
+					if race.Permissions.CanOpenForRegistration {
+						<form
+ 							action={ raceAction(race.Id, "open_for_registration") }
+ 							method="post"
+ 							class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4 h-max"
+						>
+							<div class="flex flex-col lg:flex-row justify-between">
+								<label for="start_at">{ lc.Tr("raceStart") }</label>
+								<input
+ 									type="datetime-local"
+ 									id="start_at"
+ 									name="start_at"
+ 									class="border px-2 py-1 rounded"
+ 									if !race.StartAt.IsZero() {
+										value={ race.StartAt.Format("2006-01-02T15:04") }
+									}
+								/>
+							</div>
+							<div class="flex flex-col lg:flex-row justify-between">
+								<label for="maximum_participants">{ lc.Tr("maximumParticipants") }</label>
+								<input
+ 									type="number"
+ 									name="maximum_participants"
+ 									id="maximum_participants"
+ 									min="1"
+ 									class="border px-2 py-1 rounded"
+ 									value={ strconv.Itoa(race.MaximumParticipants) }
+								/>
+							</div>
+							<input type="submit" value={ lc.Tr("openForRegistrationButton") } class="btn-primary"/>
+						</form>
+					}
+					if race.Permissions.CanUpdateDescription {
+						<form
+ 							action={ raceAction(race.Id, "update_description") }
+ 							method="post"
+ 							enctype="multipart/form-data"
+ 							class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4"
+						>
+							<div class="w-full flex justify-center">
+								if race.CoverImage != "" {
+									<img src={ string(imageSrc(race.CoverImage)) } alt={ lc.Tr("raceCoverImage") } class="object-contain"/>
+								} else {
+									<div class="bg-gray-300 w-full"></div>
+								}
+							</div>
+							<div class="flex flex-col lg:flex-row justify-between">
+								<label for="cover_image">{ lc.Tr("raceCoverImage") }</label>
+								<input type="file" name="cover_image" id="cover_image"/>
+								<div>
+									<label for="clear_cover_image">{ lc.Tr("clearLabel") }</label>
+									<input type="checkbox" name="clear_cover_image" id="clear_cover_image"/>
+								</div>
+							</div>
+							<input type="submit" value={ lc.Tr("updateDescriptionButton") } class="btn-primary"/>
+						</form>
+					}
+				</div>
+				<table class="mt-6 max-w-screen-xl w-full table-auto">
+					<thead>
+						<tr>
+							<th>{ lc.Tr("user") }</th>
+							<th>{ lc.Tr("registrationDate") }</th>
+							<th>{ lc.Tr("documents") }</th>
+							<th>{ lc.Tr("status") }</th>
+							<th>{ lc.Tr("actions") }</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, registration := range raceRegistrations {
+							<tr>
+								<td>{ registration.User.Username }</td>
+								<td>{ registration.RegisteredAt.Format("Monday, January 2, 2006 at 15:04") }</td>
+								<td>
+									if registration.MedicalCertificate != nil {
+										<a
+ 											href={ fileHref(*registration.MedicalCertificate) }
+ 											class="btn-secondary"
+ 											download={ fmt.Sprintf("%s_medical_certificate_%s", registration.User.Username, *registration.MedicalCertificate) }
+										>
+											{ lc.Tr("medicalCertificate_download") }
+										</a>
+									}
+								</td>
+								<td><span class="chip bg-green-700">{ string(registration.Status) }</span></td>
+								<td>
+									if registration.Permissions.CanApprove {
+										<form action={ raceRegistrationAction(race.Id, registration.User.Id, "approve") } method="post">
+											<input type="submit" value={ lc.Tr("approveButton") } class="btn-primary"/>
+										</form>
+									}
+									if registration.Permissions.CanApproveMedicalCertificate {
+										<form
+ 											action={ raceRegistrationAction(race.Id, registration.User.Id, "approve_medical_certificate") }
+ 											method="post"
+										>
+											<input type="submit" value={ lc.Tr("approveMedicalCertificate_button") } class="btn-primary"/>
+										</form>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</main>
+		</body>
+	</html>
+}

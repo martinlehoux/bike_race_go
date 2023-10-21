@@ -1,0 +1,15 @@
+package auth
+
+import "bike_race/templates"
+import "fmt"
+
+templ MePage(lc LoginContext) {
+	<html>
+		@templates.Head()
+		<body>
+			@templates.Navbar(lc.LoggedIn, lc.Tr)
+			<h1>{ lc.Tr("profile") }</h1>
+			<p>{ lc.Tr("language") }: {  fmt.Sprintf("language_%s", lc.User.Language)  }</p>
+		</body>
+	</html>
+}

@@ -1,0 +1,30 @@
+package templates
+
+templ Navbar(isLoggedIn bool, tr func(format string, args ...any) string) {
+	<nav>
+		<div class="flex flex-row w-full shadow justify-between bg-blue-300">
+			<div class="flex flex-row">
+				<a href="/" class="px-4 py-2 hover:bg-blue-700">{ tr("homeNavLink") }</a>
+				<a href="/races" class="px-4 py-2 hover:bg-blue-700">{ tr("raceNavLink") }</a>
+				<a href="/users" class="px-4 py-2 hover:bg-blue-700">{ tr("usersNavLink") }</a>
+				if isLoggedIn {
+					<a href="/races/registrations" class="px-4 py-2 hover:bg-blue-700">{ tr("registrationsNavLink") }</a>
+				}
+			</div>
+			<div class="flex flex-row">
+				if isLoggedIn {
+					<a href="/users/me" class="px-4 py-2 hover:bg-blue-700">{ tr("profileNavLink") }</a>
+					<form action="/users/log_out" method="post">
+						<input type="submit" value={ tr("logOutButton") } class="px-4 py-2 hover:bg-blue-700 cursor-pointer"/>
+					</form>
+				} else {
+					<form action="/users/log_in" method="post" class="flex flex-row items-center px-4 gap-2">
+						<input type="text" name="username" placeholder={ tr("usernamePlaceholder") } class="rounded px-2"/>
+						<input type="password" name="password" placeholder="password" class="rounded px-2"/>
+						<input type="submit" value={ tr("logInButton") } class="btn-primary"/>
+					</form>
+				}
+			</div>
+		</div>
+	</nav>
+}

@@ -3,6 +3,7 @@ module bike_race
 go 1.20
 
 require (
+	github.com/a-h/templ v0.2.408
 	github.com/exaring/otelpgx v0.5.2
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/gofrs/uuid v4.4.0+incompatible

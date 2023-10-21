@@ -1,0 +1,36 @@
+package race
+
+import "bike_race/auth"
+import "bike_race/templates"
+
+templ RegistrationsPage(lc auth.LoginContext, registrations []UserRegistrationModel) {
+	<html>
+		@templates.Head()
+		<body>
+			@templates.Navbar(lc.LoggedIn, lc.Tr)
+			<main class="flex flex-col mx-4 items-center">
+				<h1 class="text-xl font-bold text-blue-900 mt-4">{ lc.Tr("userRegistrations_title") }</h1>
+				<div class="flex flex-col">
+					for _, registration := range registrations {
+						<div class="flex flex-col gap-4">
+							<span>{ registration.Race.Name }</span>
+							if registration.Permissions.CanUploadMedicalCertificate {
+								<form
+ 									action={ raceAction(registration.Race.Id, "upload_medical_certificate" ) }
+ 									method="post"
+ 									enctype="multipart/form-data"
+ 									class="flex flex-row"
+								>
+									<input type="file" name="medical_certificate" id="medical_certificate"/>
+									<input type="submit" value={ lc.Tr("uploadMedicalCertificateButton") } class="btn-primary"/>
+								</form>
+							} else {
+								<span>{ lc.Tr("medicalCertificateUploaded") }</span>
+							}
+						</div>
+					}
+				</div>
+			</main>
+		</body>
+	</html>
+}
