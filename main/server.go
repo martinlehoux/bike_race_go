@@ -28,7 +28,7 @@ func getTracerProvider(ctx context.Context, serviceName string) *trace.TracerPro
 	// version, env, ...
 	providerResource, err := resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName(serviceName)),
+		resource.NewSchemaless(semconv.ServiceName(serviceName)),
 	)
 	core.Expect(err, "error creating resource")
 
