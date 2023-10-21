@@ -11,7 +11,7 @@ func TestExtractKeys(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 0, keys["Hello"])
 }
 
@@ -20,7 +20,7 @@ func TestExtractKeysWithoutSpaces(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 0, keys["Hello"])
 }
 
@@ -29,7 +29,7 @@ func TestExtractKeysWithDollar(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 0, keys["Hello"])
 }
 
@@ -38,7 +38,7 @@ func TestExtractKeysWithOneArgs(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 1, keys["approveButton"])
 }
 
@@ -47,7 +47,7 @@ func TestExtractKeysWithSeveralArgs(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 3, keys["approveButton"])
 }
 
@@ -56,6 +56,6 @@ func TestExtractKeysWithComplexArgs(t *testing.T) {
 
 	keys := extractKeys(content)
 
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, 1, keys["raceStart_chosen"])
 }

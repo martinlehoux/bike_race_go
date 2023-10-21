@@ -16,6 +16,10 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+func raceDetailsUrl(raceId core.ID) string {
+	return fmt.Sprintf("/races/%s", raceId.String())
+}
+
 func Router(conn *pgxpool.Pool) *chi.Mux {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
@@ -129,7 +133,7 @@ func approveRaceRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {
-			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+			http.Redirect(w, r, raceDetailsUrl(raceId), http.StatusSeeOther)
 		}
 	}
 }
@@ -157,7 +161,7 @@ func approveRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.Handler
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {
-			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+			http.Redirect(w, r, raceDetailsUrl(raceId), http.StatusSeeOther)
 		}
 	}
 }
@@ -177,7 +181,7 @@ func registerForRaceRoute(conn *pgxpool.Pool) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), code)
 		} else {
-			http.Redirect(w, r, "/races/"+raceId.String(), http.StatusSeeOther)
+			http.Redirect(w, r, raceDetailsUrl(raceId), http.StatusSeeOther)
 		}
 	}
 }
@@ -237,7 +241,7 @@ func updateRaceDescriptionRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/races/%s", raceId.String()), http.StatusSeeOther)
+		http.Redirect(w, r, raceDetailsUrl(raceId), http.StatusSeeOther)
 	}
 }
 
@@ -263,7 +267,7 @@ func openRaceForRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		} else {
-			http.Redirect(w, r, fmt.Sprintf("/races/%s", raceId.String()), http.StatusSeeOther)
+			http.Redirect(w, r, raceDetailsUrl(raceId), http.StatusSeeOther)
 		}
 	}
 }
