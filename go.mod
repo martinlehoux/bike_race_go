@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/joho/godotenv v1.5.1
 	github.com/kataras/i18n v0.0.8
-	github.com/martinlehoux/kagamigo v0.3.0
+	github.com/martinlehoux/kagamigo v0.3.1
 	github.com/riandyrn/otelchi v0.5.1
 	github.com/samber/lo v1.38.1
 	go.opentelemetry.io/otel v1.19.0
