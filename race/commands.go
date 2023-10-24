@@ -2,7 +2,6 @@ package race
 
 import (
 	"bike_race/auth"
-	"bike_race/core"
 	"context"
 	"errors"
 	"mime/multipart"
@@ -10,6 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/martinlehoux/kagamigo/kauth"
+	"github.com/martinlehoux/kagamigo/kcore"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
@@ -22,37 +23,37 @@ func OrganizeRaceCommand(ctx context.Context, conn *pgxpool.Pool, name string) (
 	logger := slog.With(slog.String("command", "OrganizeRaceCommand"))
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	race, err := NewRace(name)
 	if err != nil {
-		err = core.Wrap(err, "error creating race")
+		err = kcore.Wrap(err, "error creating race")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = race.AddOrganizer(currentUser)
 	if err != nil {
-		err = core.Wrap(err, "error adding organizer")
+		err = kcore.Wrap(err, "error adding organizer")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = race.Save(ctx, conn)
 	if err != nil {
-		err = core.Wrap(err, "error saving race")
+		err = kcore.Wrap(err, "error saving race")
 		logger.Error(err.Error())
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusCreated, nil
 }
 
-func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, maximumParticipants int) (int, error) {
+func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, maximumParticipants int) (int, error) {
 	logger := slog.With(slog.String("raceId", raceId.String()))
 	logger.Info("opening race for registration")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		slog.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		slog.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", currentUser.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
@@ -60,32 +61,32 @@ func OpenRaceForRegistration(ctx context.Context, conn *pgxpool.Pool, raceId cor
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
-	if !lo.ContainsBy(race.Organizers, func(userId core.ID) bool { return userId == currentUser.Id }) {
+	if !lo.ContainsBy(race.Organizers, func(userId kcore.ID) bool { return userId == currentUser.Id }) {
 		logger.Warn(ErrUserNotOrganizer.Error())
 		return http.StatusUnauthorized, ErrUserNotOrganizer
 	}
 
 	err = race.OpenForRegistration(maximumParticipants)
 	if err != nil {
-		err = core.Wrap(err, "error opening race for registration")
+		err = kcore.Wrap(err, "error opening race for registration")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("race opened for registration")
 	return http.StatusOK, nil
 }
 
-func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (int, error) {
+func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID) (int, error) {
 	logger := slog.With(slog.String("command", "RegisterForRaceCommand"), slog.String("raceId", raceId.String()))
 	user, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", user.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
@@ -93,35 +94,35 @@ func RegisterForRaceCommand(ctx context.Context, conn *pgxpool.Pool, raceId core
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
 	err = race.Register(user)
 	if err != nil {
-		err = core.Wrap(err, "error registering user")
+		err = kcore.Wrap(err, "error registering user")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registered to race")
 	return http.StatusOK, nil
 }
 
-func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, userId core.ID) (int, error) {
+func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, userId kcore.ID) (int, error) {
 	logger := slog.With(slog.String("command", "ApproveRaceRegistrationCommand"), slog.String("raceId", raceId.String()), slog.String("userId", userId.String()))
 	logger.Info("approving user registration")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
 		logger.Warn(ErrUserNotOrganizer.Error())
@@ -133,30 +134,30 @@ func ApproveRaceRegistrationCommand(ctx context.Context, conn *pgxpool.Pool, rac
 	}
 	err = race.ApproveRegistration(userId)
 	if err != nil {
-		err = core.Wrap(err, "error approving registration")
+		err = kcore.Wrap(err, "error approving registration")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registration approved")
 	return http.StatusOK, nil
 }
 
-func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, userId core.ID) (int, error) {
+func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, userId kcore.ID) (int, error) {
 	logger := slog.With(slog.String("command", "ApproveRegistrationMedicalCertificateCommand"), slog.String("raceId", raceId.String()), slog.String("userId", userId.String()))
 	logger.Info("approving user registration medical certificate")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
 		logger.Warn(ErrUserNotOrganizer.Error())
@@ -164,30 +165,30 @@ func ApproveRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgx
 	}
 	err = race.ApproveMedicalCertificate(userId)
 	if err != nil {
-		err = core.Wrap(err, "error approving medical certificate")
+		err = kcore.Wrap(err, "error approving medical certificate")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("user registration medical certificate approved")
 	return http.StatusOK, nil
 }
 
-func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, clearCoverImage bool, coverImageFile multipart.File) (int, error) {
+func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, clearCoverImage bool, coverImageFile multipart.File) (int, error) {
 	logger := slog.With(slog.String("command", "UpdateRaceDescriptionCommand"), slog.String("raceId", raceId.String()))
 	logger.Info("updating race description")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	race, err := LoadRace(ctx, conn, raceId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
 	if !race.IsOrganizer(currentUser) {
 		logger.Warn(ErrUserNotOrganizer.Error())
@@ -197,7 +198,7 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	if clearCoverImage && race.CoverImage != nil {
 		err = race.CoverImage.Delete()
 		if err != nil {
-			err = core.Wrap(err, "error deleting old cover_image")
+			err = kcore.Wrap(err, "error deleting old cover_image")
 			logger.Warn(err.Error())
 			return http.StatusBadRequest, err
 		}
@@ -205,29 +206,29 @@ func UpdateRaceDescriptionCommand(ctx context.Context, conn *pgxpool.Pool, raceI
 	}
 
 	if coverImageFile != nil {
-		coverImage := core.NewImage()
+		coverImage := kcore.NewImage()
 		err = coverImage.Save(coverImageFile)
 		if err != nil {
-			err = core.Wrap(err, "error saving cover_image")
+			err = kcore.Wrap(err, "error saving cover_image")
 			logger.Warn(err.Error())
 			return http.StatusBadRequest, err
 		}
 		race.CoverImage = &coverImage
 	}
 
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("updated race description")
 	return http.StatusOK, nil
 }
 
-func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, medicalCertificateFile multipart.File, medicalCertificateExt string) (int, error) {
+func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, medicalCertificateFile multipart.File, medicalCertificateExt string) (int, error) {
 	logger := slog.With(slog.String("command", "UploadRegistrationMedicalCertificateCommand"), slog.String("raceId", raceId.String()))
 	logger.Info("uploading registration medical certificate")
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		logger.Warn(auth.ErrUserNotLoggedIn.Error())
-		return http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		logger.Warn(kauth.ErrUserNotLoggedIn.Error())
+		return http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	logger = logger.With(slog.String("userId", currentUser.Id.String()))
 	race, err := LoadRace(ctx, conn, raceId)
@@ -235,24 +236,24 @@ func UploadRegistrationMedicalCertificateCommand(ctx context.Context, conn *pgxp
 		logger.Warn(err.Error())
 		return http.StatusNotFound, err
 	}
-	core.Expect(err, "")
+	kcore.Expect(err, "")
 
-	medicalCertificate := core.NewFile(medicalCertificateExt)
+	medicalCertificate := kcore.NewFile(medicalCertificateExt)
 	err = medicalCertificate.Save(medicalCertificateFile)
 	if err != nil {
-		err = core.Wrap(err, "error saving medical_certificate")
+		err = kcore.Wrap(err, "error saving medical_certificate")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 	err = race.UploadMedicalCertificate(currentUser.Id, medicalCertificate)
 	if err != nil {
-		core.Expect(medicalCertificate.Delete(), "error deleting medical certificate")
-		err = core.Wrap(err, "error uploading medical certificate")
+		kcore.Expect(medicalCertificate.Delete(), "error deleting medical certificate")
+		err = kcore.Wrap(err, "error uploading medical certificate")
 		logger.Warn(err.Error())
 		return http.StatusBadRequest, err
 	}
 
-	core.Expect(race.Save(ctx, conn), "")
+	kcore.Expect(race.Save(ctx, conn), "")
 
 	logger.Info("registration medical certificate uploaded")
 	return http.StatusOK, nil

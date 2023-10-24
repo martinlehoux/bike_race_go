@@ -1,8 +1,9 @@
 package race
 
 import (
-	"bike_race/core"
 	"time"
+
+	"github.com/martinlehoux/kagamigo/kcore"
 )
 
 type RaceRegistrationStatus string
@@ -14,14 +15,14 @@ const (
 )
 
 type RaceRegistration struct {
-	UserId                       core.ID
+	UserId                       kcore.ID
 	RegisteredAt                 time.Time
 	Status                       RaceRegistrationStatus
-	MedicalCertificate           *core.File
+	MedicalCertificate           *kcore.File
 	IsMedicalCertificateApproved bool
 }
 
-func NewRaceRegistration(userId core.ID) RaceRegistration {
+func NewRaceRegistration(userId kcore.ID) RaceRegistration {
 	return RaceRegistration{
 		UserId:                       userId,
 		Status:                       Registered,

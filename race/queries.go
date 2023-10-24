@@ -2,7 +2,6 @@ package race
 
 import (
 	"bike_race/auth"
-	"bike_race/core"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/martinlehoux/kagamigo/kauth"
+	"github.com/martinlehoux/kagamigo/kcore"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 type RaceListModel struct {
-	Id                    core.ID
+	Id                    kcore.ID
 	Name                  string
 	StartAt               time.Time
 	IsOpenForRegistration bool
@@ -52,14 +53,14 @@ func RaceListQuery(ctx context.Context, conn *pgxpool.Pool) ([]RaceListModel, in
 		LEFT JOIN race_registrations on races.id = race_registrations.race_id
 		GROUP BY races.id, races.name
 		`, hasUserRegisteredSelect), queryArgs...)
-	core.Expect(err, "error querying races")
+	kcore.Expect(err, "error querying races")
 	defer rows.Close()
 
 	var races []RaceListModel
 	for rows.Next() {
 		var hasUserRegistered bool
 		var row RaceListModel
-		core.Expect(rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.CoverImage, &row.Organizers, &row.RegisteredCount, &hasUserRegistered), "error scanning races")
+		kcore.Expect(rows.Scan(&row.Id, &row.Name, &row.StartAt, &row.IsOpenForRegistration, &row.MaximumParticipants, &row.CoverImage, &row.Organizers, &row.RegisteredCount, &hasUserRegistered), "error scanning races")
 		row.CanRegister = isLoggedIn && row.IsOpenForRegistration && row.RegisteredCount < 100 && !hasUserRegistered
 		races = append(races, row)
 	}
@@ -73,7 +74,7 @@ type RacePermissionsModel struct {
 }
 
 type RaceDetailModel struct {
-	Id                    core.ID
+	Id                    kcore.ID
 	Name                  string
 	IsOpenForRegistration bool
 	MaximumParticipants   int
@@ -82,7 +83,7 @@ type RaceDetailModel struct {
 	Permissions           RacePermissionsModel
 }
 
-func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (RaceDetailModel, int, error) {
+func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID) (RaceDetailModel, int, error) {
 	currentUser, _ := auth.UserFromContext(ctx)
 	var race RaceDetailModel
 	var isCurrentUserOrganizer bool
@@ -103,7 +104,7 @@ func RaceDetailQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID) (R
 	if errors.Is(err, pgx.ErrNoRows) {
 		return race, http.StatusNotFound, ErrRaceNotFound
 	}
-	core.Expect(err, "error querying race")
+	kcore.Expect(err, "error querying race")
 
 	return race, http.StatusOK, nil
 }
@@ -115,7 +116,7 @@ type RaceRegistrationPermissionsModel struct {
 
 type RaceRegistrationModel struct {
 	User struct {
-		Id       core.ID
+		Id       kcore.ID
 		Username string
 	}
 	Status                       RaceRegistrationStatus
@@ -125,7 +126,7 @@ type RaceRegistrationModel struct {
 	Permissions                  RaceRegistrationPermissionsModel
 }
 
-func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core.ID, racePermissions RacePermissionsModel) ([]RaceRegistrationModel, int, error) {
+func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId kcore.ID, racePermissions RacePermissionsModel) ([]RaceRegistrationModel, int, error) {
 	var registrations []RaceRegistrationModel
 	rows, err := conn.Query(ctx, `
 		SELECT
@@ -140,12 +141,12 @@ func RaceRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool, raceId core
 		WHERE race_registrations.race_id = $1
 		ORDER BY race_registrations.registered_at ASC
 		`, raceId)
-	core.Expect(err, "error querying race_registrations")
+	kcore.Expect(err, "error querying race_registrations")
 	defer rows.Close()
 
 	for rows.Next() {
 		var registration RaceRegistrationModel
-		core.Expect(rows.Scan(&registration.User.Id, &registration.Status, &registration.RegisteredAt, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved, &registration.User.Username), "error scanning race_registrations")
+		kcore.Expect(rows.Scan(&registration.User.Id, &registration.Status, &registration.RegisteredAt, &registration.MedicalCertificate, &registration.IsMedicalCertificateApproved, &registration.User.Username), "error scanning race_registrations")
 		registration.Permissions = RaceRegistrationPermissionsModel{
 			CanApprove:                   racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.IsMedicalCertificateApproved,
 			CanApproveMedicalCertificate: racePermissions.CanApproveRegistrations && registration.Status == Registered && registration.MedicalCertificate != nil && !registration.IsMedicalCertificateApproved,
@@ -162,7 +163,7 @@ type UserRegistrationModelPermissions struct {
 type UserRegistrationModel struct {
 	Status RaceRegistrationStatus
 	Race   struct {
-		Id   core.ID
+		Id   kcore.ID
 		Name string
 	}
 	Permissions UserRegistrationModelPermissions
@@ -171,7 +172,7 @@ type UserRegistrationModel struct {
 func CurrentUserRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool) ([]UserRegistrationModel, int, error) {
 	currentUser, ok := auth.UserFromContext(ctx)
 	if !ok {
-		return nil, http.StatusUnauthorized, auth.ErrUserNotLoggedIn
+		return nil, http.StatusUnauthorized, kauth.ErrUserNotLoggedIn
 	}
 	registrations := []UserRegistrationModel{}
 	rows, err := conn.Query(ctx, `
@@ -184,12 +185,12 @@ func CurrentUserRegistrationsQuery(ctx context.Context, conn *pgxpool.Pool) ([]U
 		WHERE
 			race_registrations.user_id = $1
 			`, currentUser.Id)
-	core.Expect(err, "error querying race_registrations")
+	kcore.Expect(err, "error querying race_registrations")
 	defer rows.Close()
 	for rows.Next() {
 		var registration UserRegistrationModel
-		var medicalCertificate *core.File
-		core.Expect(rows.Scan(&registration.Race.Id, &registration.Status, &medicalCertificate, &registration.Race.Name), "error scanning race_registrations")
+		var medicalCertificate *kcore.File
+		kcore.Expect(rows.Scan(&registration.Race.Id, &registration.Status, &medicalCertificate, &registration.Race.Name), "error scanning race_registrations")
 		registration.Permissions = UserRegistrationModelPermissions{
 			CanUploadMedicalCertificate: registration.Status == Registered && medicalCertificate == nil,
 		}

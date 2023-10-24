@@ -1,0 +1,30 @@
+package auth
+
+templ Navbar(login Login) {
+	<nav>
+		<div class="flex flex-row w-full shadow justify-between bg-blue-300">
+			<div class="flex flex-row">
+				<a href="/" class="px-4 py-2 hover:bg-blue-700">{ login.Tr("homeNavLink") }</a>
+				<a href="/races" class="px-4 py-2 hover:bg-blue-700">{ login.Tr("raceNavLink") }</a>
+				<a href="/users" class="px-4 py-2 hover:bg-blue-700">{ login.Tr("usersNavLink") }</a>
+				if login.Ok {
+					<a href="/races/registrations" class="px-4 py-2 hover:bg-blue-700">{ login.Tr("registrationsNavLink") }</a>
+				}
+			</div>
+			<div class="flex flex-row">
+				if login.Ok {
+					<a href="/users/me" class="px-4 py-2 hover:bg-blue-700">{ login.Tr("profileNavLink") }</a>
+					<form action="/users/log_out" method="post">
+						<input type="submit" value={ login.Tr("logOutButton") } class="px-4 py-2 hover:bg-blue-700 cursor-pointer"/>
+					</form>
+				} else {
+					<form action="/users/log_in" method="post" class="flex flex-row items-center px-4 gap-2">
+						<input type="text" name="username" placeholder={ login.Tr("usernamePlaceholder") } class="rounded px-2"/>
+						<input type="password" name="password" placeholder="password" class="rounded px-2"/>
+						<input type="submit" value={ login.Tr("logInButton") } class="btn-primary"/>
+					</form>
+				}
+			</div>
+		</div>
+	</nav>
+}

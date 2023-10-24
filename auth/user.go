@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"bike_race/core"
 	"errors"
 
+	"github.com/martinlehoux/kagamigo/kcore"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -13,10 +13,14 @@ var (
 )
 
 type User struct {
-	Id           core.ID
+	Id           kcore.ID
 	Username     string
 	PasswordHash []byte
-	Language     string
+	language     string
+}
+
+func (user User) Language() string {
+	return user.language
 }
 
 func NewUser(username string) (User, error) {
@@ -24,9 +28,9 @@ func NewUser(username string) (User, error) {
 	if len(username) < 3 {
 		return user, ErrUserUsernameTooShort
 	}
-	user.Id = core.NewID()
+	user.Id = kcore.NewID()
 	user.Username = username
-	user.Language = "en"
+	user.language = "en"
 	return user, nil
 }
 
@@ -36,7 +40,7 @@ func (user *User) SetPassword(oldPassword string, newPassword string) error {
 	}
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return core.Wrap(err, "failed to generate password hash")
+		return kcore.Wrap(err, "failed to generate password hash")
 	}
 	user.PasswordHash = newPasswordHash
 	return nil

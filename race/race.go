@@ -2,10 +2,10 @@ package race
 
 import (
 	"bike_race/auth"
-	"bike_race/core"
 	"errors"
 	"time"
 
+	"github.com/martinlehoux/kagamigo/kcore"
 	"github.com/samber/lo"
 )
 
@@ -22,16 +22,16 @@ var (
 )
 
 type Race struct {
-	Id         core.ID
+	Id         kcore.ID
 	Name       string
-	Organizers []core.ID
+	Organizers []kcore.ID
 	StartAt    time.Time
 	// Description
-	CoverImage *core.Image
+	CoverImage *kcore.Image
 	// Registration
 	IsOpenForRegistration bool
 	MaximumParticipants   int
-	Registrations         map[core.ID]RaceRegistration
+	Registrations         map[kcore.ID]RaceRegistration
 }
 
 func NewRace(name string) (Race, error) {
@@ -39,11 +39,11 @@ func NewRace(name string) (Race, error) {
 		return Race{}, ErrRaceNameTooShort
 	}
 	return Race{
-		Id:                    core.NewID(),
+		Id:                    kcore.NewID(),
 		Name:                  name,
-		Organizers:            []core.ID{},
+		Organizers:            []kcore.ID{},
 		IsOpenForRegistration: false,
-		Registrations:         map[core.ID]RaceRegistration{},
+		Registrations:         map[kcore.ID]RaceRegistration{},
 	}, nil
 }
 
@@ -76,7 +76,7 @@ func (race *Race) OpenForRegistration(maximumParticipants int) error {
 	return nil
 }
 
-func (race *Race) ApproveMedicalCertificate(userId core.ID) error {
+func (race *Race) ApproveMedicalCertificate(userId kcore.ID) error {
 	registration, ok := race.Registrations[userId]
 	if !ok {
 		return ErrUserNotRegistered
@@ -89,7 +89,7 @@ func (race *Race) ApproveMedicalCertificate(userId core.ID) error {
 	return nil
 }
 
-func (race *Race) ApproveRegistration(userId core.ID) error {
+func (race *Race) ApproveRegistration(userId kcore.ID) error {
 	registration, ok := race.Registrations[userId]
 	if !ok {
 		return ErrUserNotRegistered
@@ -105,7 +105,7 @@ func (race *Race) ApproveRegistration(userId core.ID) error {
 	return nil
 }
 
-func (race *Race) UploadMedicalCertificate(userId core.ID, medicalCertificate core.File) error {
+func (race *Race) UploadMedicalCertificate(userId kcore.ID, medicalCertificate kcore.File) error {
 	registration, ok := race.Registrations[userId]
 	if !ok {
 		return ErrUserNotRegistered
@@ -117,7 +117,7 @@ func (race *Race) UploadMedicalCertificate(userId core.ID, medicalCertificate co
 	if registration.MedicalCertificate != nil {
 		err := registration.MedicalCertificate.Delete()
 		if err != nil {
-			return core.Wrap(err, "error deleting old medical certificate")
+			return kcore.Wrap(err, "error deleting old medical certificate")
 		}
 	}
 
@@ -128,5 +128,5 @@ func (race *Race) UploadMedicalCertificate(userId core.ID, medicalCertificate co
 }
 
 func (race Race) IsOrganizer(user auth.User) bool {
-	return lo.ContainsBy(race.Organizers, func(id core.ID) bool { return id == user.Id })
+	return lo.ContainsBy(race.Organizers, func(id kcore.ID) bool { return id == user.Id })
 }

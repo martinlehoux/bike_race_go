@@ -1,19 +1,15 @@
 package auth
 
-import (
-	"bike_race/templates"
-)
-
-templ UsersPage(users []UserListModel, lc LoginContext) {
+templ UsersPage(login Login, users []UserListModel) {
 	<html>
-		@templates.Head()
+		@Head()
 		<body>
-			@templates.Navbar(lc.LoggedIn, lc.Tr)
-			<h1>{ lc.Tr("allUsers") }</h1>
+			@Navbar(login)
+			<h1>{ login.Tr("allUsers") }</h1>
 			<table>
 				<thead>
 					<tr>
-						<th>{ lc.Tr("username") }</th>
+						<th>{ login.Tr("username") }</th>
 					</tr>
 				</thead>
 				<tbody>

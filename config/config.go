@@ -1,15 +1,15 @@
 package config
 
 import (
-	"bike_race/core"
 	"context"
-	"encoding/hex"
 	"errors"
 	"os"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/martinlehoux/kagamigo/kauth"
+	"github.com/martinlehoux/kagamigo/kcore"
 	"golang.org/x/exp/slog"
 )
 
@@ -18,9 +18,8 @@ var (
 )
 
 type Config struct {
-	Domain       string
-	CookieSecret []byte
-	DatabaseURL  string
+	DatabaseURL string
+	Auth        kauth.AuthConfig
 }
 
 func LoadConfig() Config {
@@ -36,49 +35,36 @@ func LoadConfig() Config {
 		os.Exit(1)
 	}
 	return Config{
-		Domain:       domain,
-		DatabaseURL:  databaseURL,
-		CookieSecret: loadCookieSecret(),
+		DatabaseURL: databaseURL,
+		Auth: kauth.AuthConfig{
+			Domain:       domain,
+			CookieSecret: kauth.LoadCookieSecret(os.Getenv("COOKIE_SECRET")),
+		},
 	}
 }
 
 func loadEnv() {
 	err := godotenv.Load()
 	if err != nil {
-		err = core.Wrap(err, "error loading .env file")
+		err = kcore.Wrap(err, "error loading .env file")
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 	slog.Info(".env file loaded")
 }
 
-func loadCookieSecret() []byte {
-	cookiesSecret, err := hex.DecodeString(os.Getenv("COOKIE_SECRET"))
-	if err != nil {
-		err = core.Wrap(err, "error decoding cookie secret")
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
-	if len(cookiesSecret) != 32 {
-		slog.Error(ErrCookieBadLength.Error())
-		os.Exit(1)
-	}
-	slog.Info("cookie secret loaded")
-	return cookiesSecret
-}
-
 func LoadDatabasePool(ctx context.Context, config Config) *pgxpool.Pool {
 	tracer := otelpgx.NewTracer()
 	conf, err := pgxpool.ParseConfig(config.DatabaseURL)
-	core.Expect(err, "error parsing database url")
+	kcore.Expect(err, "error parsing database url")
 	conf.ConnConfig.Tracer = tracer
 	pool, err := pgxpool.NewWithConfig(ctx, conf)
 	if err != nil {
-		err = core.Wrap(err, "error connecting to database")
+		err = kcore.Wrap(err, "error connecting to database")
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
-	core.Expect(pool.Ping(ctx), "error pinging database")
+	kcore.Expect(pool.Ping(ctx), "error pinging database")
 	slog.Info("connected to database")
 	return pool
 }

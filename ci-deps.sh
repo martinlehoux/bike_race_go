@@ -7,3 +7,4 @@ go install honnef.co/go/tools/cmd/staticcheck@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 go install github.com/a-h/templ/cmd/templ@latest
+go install github.com/martinlehoux/kagamigo/cmd/cvet@latest

@@ -1,16 +1,15 @@
 package race
 
 import "bike_race/auth"
-import "bike_race/templates"
 import "fmt"
 import "strconv"
-import "bike_race/core"
+import "github.com/martinlehoux/kagamigo/kcore"
 
-func raceAction(raceId core.ID, action string) string {
+func raceAction(raceId kcore.ID, action string) string {
 	return fmt.Sprintf("/races/%s/%s", raceId.String(), action)
 }
 
-func raceRegistrationAction(raceId core.ID, userId core.ID, action string) string {
+func raceRegistrationAction(raceId kcore.ID, userId kcore.ID, action string) string {
 	return fmt.Sprintf("/races/%s/registrations/%s/%s", raceId.String(), userId.String(), action)
 }
 
@@ -22,10 +21,11 @@ func fileHref(file string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/media/files/%s", file))
 }
 
-templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []RaceRegistrationModel) {
+templ RacePage(login auth.Login, race RaceDetailModel, raceRegistrations []RaceRegistrationModel) {
 	<html>
-		@templates.Head()
+		@auth.Head()
 		<body>
+			@auth.Navbar(login)
 			<main class="flex flex-col mx-4 items-center">
 				<h1 class="text-xl font-bold text-blue-900 mt-4">{ race.Name }</h1>
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 justify-start">
@@ -36,7 +36,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
  							class="flex flex-col max-w-screen-sm w-full gap-2 rounded shadow p-2 mt-4 h-max"
 						>
 							<div class="flex flex-col lg:flex-row justify-between">
-								<label for="start_at">{ lc.Tr("raceStart") }</label>
+								<label for="start_at">{ login.Tr("raceStart") }</label>
 								<input
  									type="datetime-local"
  									id="start_at"
@@ -48,7 +48,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
 								/>
 							</div>
 							<div class="flex flex-col lg:flex-row justify-between">
-								<label for="maximum_participants">{ lc.Tr("maximumParticipants") }</label>
+								<label for="maximum_participants">{ login.Tr("maximumParticipants") }</label>
 								<input
  									type="number"
  									name="maximum_participants"
@@ -58,7 +58,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
  									value={ strconv.Itoa(race.MaximumParticipants) }
 								/>
 							</div>
-							<input type="submit" value={ lc.Tr("openForRegistrationButton") } class="btn-primary"/>
+							<input type="submit" value={ login.Tr("openForRegistrationButton") } class="btn-primary"/>
 						</form>
 					}
 					if race.Permissions.CanUpdateDescription {
@@ -70,31 +70,31 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
 						>
 							<div class="w-full flex justify-center">
 								if race.CoverImage != "" {
-									<img src={ string(imageSrc(race.CoverImage)) } alt={ lc.Tr("raceCoverImage") } class="object-contain"/>
+									<img src={ string(imageSrc(race.CoverImage)) } alt={ login.Tr("raceCoverImage") } class="object-contain"/>
 								} else {
 									<div class="bg-gray-300 w-full"></div>
 								}
 							</div>
 							<div class="flex flex-col lg:flex-row justify-between">
-								<label for="cover_image">{ lc.Tr("raceCoverImage") }</label>
+								<label for="cover_image">{ login.Tr("raceCoverImage") }</label>
 								<input type="file" name="cover_image" id="cover_image"/>
 								<div>
-									<label for="clear_cover_image">{ lc.Tr("clearLabel") }</label>
+									<label for="clear_cover_image">{ login.Tr("clearLabel") }</label>
 									<input type="checkbox" name="clear_cover_image" id="clear_cover_image"/>
 								</div>
 							</div>
-							<input type="submit" value={ lc.Tr("updateDescriptionButton") } class="btn-primary"/>
+							<input type="submit" value={ login.Tr("updateDescriptionButton") } class="btn-primary"/>
 						</form>
 					}
 				</div>
 				<table class="mt-6 max-w-screen-xl w-full table-auto">
 					<thead>
 						<tr>
-							<th>{ lc.Tr("user") }</th>
-							<th>{ lc.Tr("registrationDate") }</th>
-							<th>{ lc.Tr("documents") }</th>
-							<th>{ lc.Tr("status") }</th>
-							<th>{ lc.Tr("actions") }</th>
+							<th>{ login.Tr("user") }</th>
+							<th>{ login.Tr("registrationDate") }</th>
+							<th>{ login.Tr("documents") }</th>
+							<th>{ login.Tr("status") }</th>
+							<th>{ login.Tr("actions") }</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -109,7 +109,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
  											class="btn-secondary"
  											download={ fmt.Sprintf("%s_medical_certificate_%s", registration.User.Username, *registration.MedicalCertificate) }
 										>
-											{ lc.Tr("medicalCertificate_download") }
+											{ login.Tr("medicalCertificate_download") }
 										</a>
 									}
 								</td>
@@ -117,7 +117,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
 								<td>
 									if registration.Permissions.CanApprove {
 										<form action={ raceRegistrationAction(race.Id, registration.User.Id, "approve") } method="post">
-											<input type="submit" value={ lc.Tr("approveButton") } class="btn-primary"/>
+											<input type="submit" value={ login.Tr("approveButton") } class="btn-primary"/>
 										</form>
 									}
 									if registration.Permissions.CanApproveMedicalCertificate {
@@ -125,7 +125,7 @@ templ RacePage(lc auth.LoginContext, race RaceDetailModel, raceRegistrations []R
  											action={ raceRegistrationAction(race.Id, registration.User.Id, "approve_medical_certificate") }
  											method="post"
 										>
-											<input type="submit" value={ lc.Tr("approveMedicalCertificate_button") } class="btn-primary"/>
+											<input type="submit" value={ login.Tr("approveMedicalCertificate_button") } class="btn-primary"/>
 										</form>
 									}
 								</td>

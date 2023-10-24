@@ -3,7 +3,6 @@ package main
 import (
 	"bike_race/auth"
 	"bike_race/config"
-	"bike_race/core"
 	"bike_race/race"
 	"context"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kataras/i18n"
+	"github.com/martinlehoux/kagamigo/kauth"
+	"github.com/martinlehoux/kagamigo/kcore"
 	"github.com/riandyrn/otelchi"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -29,11 +30,11 @@ func getTracerProvider(ctx context.Context, serviceName string) *trace.TracerPro
 		resource.Default(),
 		resource.NewSchemaless(semconv.ServiceName(serviceName)),
 	)
-	core.Expect(err, "error creating resource")
+	kcore.Expect(err, "error creating resource")
 
 	httpClient := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")), otlptracehttp.WithInsecure())
 	httpExporter, err := otlptrace.New(ctx, httpClient)
-	core.Expect(err, "error creating exporter")
+	kcore.Expect(err, "error creating exporter")
 
 	return trace.NewTracerProvider(
 		trace.WithBatcher(httpExporter,
@@ -57,27 +58,33 @@ func main() {
 	defer tracerProvider.Shutdown(ctx) //nolint:errcheck
 
 	router := chi.NewRouter()
-	router.Use(core.RecoverMiddleware)
+	router.Use(kcore.RecoverMiddleware)
 	router.Use(otelchi.Middleware(serviceName)) // otelchi.WithChiRoutes(router)
-	router.Use(auth.CookieAuthMiddleware(conn, conf))
+	loadUser := func(ctx context.Context, userId kcore.ID) (any, error) {
+		user, err := auth.LoadUser(ctx, conn, userId)
+		return user, kcore.Wrap(err, "error loading user")
+	}
+	router.Use(kauth.CookieAuthMiddleware(loadUser, conf.Auth))
 
 	router.With(middleware.SetHeader("Cache-Control", "max-age=3600")).Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	router.Handle("/media/*", http.StripPrefix("/media/", http.FileServer(http.Dir("media"))))
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		lc := auth.GetLoginContext(r)
-		page := IndexPage(lc)
-		core.RenderPage(r.Context(), page, w)
+		ctx := r.Context()
+		login := auth.LoginFromContext(ctx)
+		page := IndexPage(login)
+		kcore.RenderPage(r.Context(), page, w)
 	})
 
 	router.Mount("/users", auth.Router(conn, conf))
 	router.Mount("/races", race.Router(conn))
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		lc := auth.GetLoginContext(r)
-		page := NotFoundPage(lc)
-		core.RenderPage(r.Context(), page, w)
+		ctx := r.Context()
+		login := auth.LoginFromContext(ctx)
+		page := NotFoundPage(login)
+		kcore.RenderPage(r.Context(), page, w)
 	})
 
 	slog.Info("listening on http://localhost:3000")
@@ -88,5 +95,5 @@ func main() {
 		Handler:           router,
 	}
 	err := server.ListenAndServe()
-	core.Expect(err, "error listening and serving")
+	kcore.Expect(err, "error listening and serving")
 }

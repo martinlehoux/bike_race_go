@@ -1,34 +1,33 @@
 package race
 
-import "bike_race/auth"
-import "bike_race/templates"
 import "fmt"
-import "bike_race/core"
+import "github.com/martinlehoux/kagamigo/kcore"
+import "bike_race/auth"
 
-func registerAction(raceId core.ID) string {
+func registerAction(raceId kcore.ID) string {
 	return fmt.Sprintf("/races/%s/register", raceId.String())
 }
 
-func raceHref(raceId core.ID) templ.SafeURL {
+func raceHref(raceId kcore.ID) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/races/%s", raceId.String()))
 }
 
-templ RacesPage(lc auth.LoginContext, races []RaceListModel) {
+templ RacesPage(login auth.Login, races []RaceListModel) {
 	<html>
-		@templates.Head()
+		@auth.Head()
 		<body>
-			@templates.Navbar(lc.LoggedIn, lc.Tr)
+			@auth.Navbar(login)
 			<main class="flex flex-col mx-4 items-center">
 				<form action="/races/organize" method="post" class="flex flex-row mt-4 gap-2 max-w-screen-sm w-full">
-					<input type="text" name="name" placeholder={ lc.Tr("raceNamePlaceholder") } class="rounded px-2 py-1 border"/>
-					<input type="submit" value={ lc.Tr("organizeRaceButton") } class="btn-primary"/>
+					<input type="text" name="name" placeholder={ login.Tr("raceNamePlaceholder") } class="rounded px-2 py-1 border"/>
+					<input type="submit" value={ login.Tr("organizeRaceButton") } class="btn-primary"/>
 				</form>
 				<div class="flex flex-col mt-6 max-w-screen-xl grow w-full gap-2">
 					for _, race := range races {
 						<div class="flex flex-row rounded shadow p-1 gap-1 hover:bg-gray-100">
 							<div class="w-32 flex justify-center">
 								if race.CoverImage != "" {
-									<img src={ imageSrc(race.CoverImage) } alt={ lc.Tr("raceCoverImage") } class="object-contain"/>
+									<img src={ imageSrc(race.CoverImage) } alt={ login.Tr("raceCoverImage") } class="object-contain"/>
 								} else {
 									<div class="bg-gray-300 w-full"></div>
 								}
@@ -37,17 +36,17 @@ templ RacesPage(lc auth.LoginContext, races []RaceListModel) {
 								<a href={ raceHref(race.Id) } class="font-bold">{ race.Name }</a>
 								<span>
 									if race.StartAt.IsZero() {
-										{ lc.Tr("raceStart_notChosen") }
+										{ login.Tr("raceStart_notChosen") }
 									} else {
-										{ lc.Tr("raceStart_chosen", race.StartAt.Format("Monday, January 2, 2006 at 15:04")) }
+										{ login.Tr("raceStart_chosen", race.StartAt.Format("Monday, January 2, 2006 at 15:04")) }
 									}
 								</span>
 								<span>{ race.Organizers }</span>
-								<span>{ lc.Tr("registrationRatio", race.RegisteredCount, race.MaximumParticipants) }</span>
+								<span>{ login.Tr("registrationRatio", race.RegisteredCount, race.MaximumParticipants) }</span>
 								<div class="flex flex-row">
 									if race.CanRegister {
 										<form action={ registerAction(race.Id) } method="post">
-											<input type="submit" value={ lc.Tr("registerButton") } class="btn-primary"/>
+											<input type="submit" value={ login.Tr("registerButton") } class="btn-primary"/>
 										</form>
 									}
 								</div>

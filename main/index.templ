@@ -1,21 +1,20 @@
 package main
 
 import "bike_race/auth"
-import "bike_race/templates"
 
-templ IndexPage(lc auth.LoginContext) {
+templ IndexPage(login auth.Login) {
 	<html>
-		@templates.Head()
+		@auth.Head()
 		<body>
-			@templates.Navbar(lc.LoggedIn, lc.Tr)
+			@auth.Navbar(login)
 			<main class="flex flex-col mx-4 items-center">
-				if lc.LoggedIn {
-					<p>{ lc.Tr("hello", lc.User.Username) }</p>
+				if login.Ok {
+					<p>{ login.Tr("hello", login.User.Username) }</p>
 				} else {
 					<form action="/users/register" method="post">
-						<input type="text" name="username" placeholder={ lc.Tr("usernamePlaceholder") }/>
+						<input type="text" name="username" placeholder={ login.Tr("usernamePlaceholder") }/>
 						<input type="password" name="password" placeholder="password"/>
-						<input type="submit" value={ lc.Tr("registerButton") }/>
+						<input type="submit" value={ login.Tr("registerButton") }/>
 					</form>
 				}
 			</main>

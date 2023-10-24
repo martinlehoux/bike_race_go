@@ -2,7 +2,6 @@ package race
 
 import (
 	"bike_race/auth"
-	"bike_race/core"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,10 +12,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/martinlehoux/kagamigo/kcore"
 	"golang.org/x/exp/slog"
 )
 
-func raceDetailsUrl(raceId core.ID) string {
+func raceDetailsUrl(raceId kcore.ID) string {
 	return fmt.Sprintf("/races/%s", raceId.String())
 }
 
@@ -24,7 +24,7 @@ func Router(conn *pgxpool.Pool) *chi.Mux {
 	router := chi.NewRouter()
 	_, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
-		err = core.Wrap(err, "error loading location")
+		err = kcore.Wrap(err, "error loading location")
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
@@ -52,9 +52,9 @@ type RaceTemplateData struct {
 func viewRaceDetailsRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -68,9 +68,9 @@ func viewRaceDetailsRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		lc := auth.GetLoginContext(r)
-		page := RacePage(lc, raceDetail, raceRegistrations)
-		core.RenderPage(r.Context(), page, w)
+		login := auth.LoginFromContext(ctx)
+		page := RacePage(login, raceDetail, raceRegistrations)
+		kcore.RenderPage(r.Context(), page, w)
 	}
 }
 
@@ -86,9 +86,9 @@ func viewRaceListRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		lc := auth.GetLoginContext(r)
-		page := RacesPage(lc, races)
-		core.RenderPage(r.Context(), page, w)
+		login := auth.LoginFromContext(ctx)
+		page := RacesPage(login, races)
+		kcore.RenderPage(r.Context(), page, w)
 	}
 }
 
@@ -104,26 +104,26 @@ func viewCurrentUserRegistrationsRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		lc := auth.GetLoginContext(r)
-		page := RegistrationsPage(lc, registrations)
-		core.RenderPage(r.Context(), page, w)
+		login := auth.LoginFromContext(ctx)
+		page := RegistrationsPage(login, registrations)
+		kcore.RenderPage(r.Context(), page, w)
 	}
 }
 
 func approveRaceRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		userId, err := core.ParseID(chi.URLParam(r, "userId"))
+		userId, err := kcore.ParseID(chi.URLParam(r, "userId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing userId")
+			err = kcore.Wrap(err, "error parsing userId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -141,17 +141,17 @@ func approveRaceRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 func approveRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		userId, err := core.ParseID(chi.URLParam(r, "userId"))
+		userId, err := kcore.ParseID(chi.URLParam(r, "userId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing userId")
+			err = kcore.Wrap(err, "error parsing userId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -169,9 +169,9 @@ func approveRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.Handler
 func registerForRaceRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -189,9 +189,9 @@ func registerForRaceRoute(conn *pgxpool.Pool) http.HandlerFunc {
 func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -199,7 +199,7 @@ func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerF
 
 		medicalCertificateFile, medicalCertificateFileHeader, err := r.FormFile("medical_certificate")
 		if err != nil {
-			err = core.Wrap(err, "error parsing medical_certificate")
+			err = kcore.Wrap(err, "error parsing medical_certificate")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -217,9 +217,9 @@ func uploadRegistrationMedicalCertificateRoute(conn *pgxpool.Pool) http.HandlerF
 func updateRaceDescriptionRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -227,7 +227,7 @@ func updateRaceDescriptionRoute(conn *pgxpool.Pool) http.HandlerFunc {
 		clearCoverImage := r.FormValue("clear_cover_image")
 		coverImageFile, _, err := r.FormFile("cover_image")
 		if err != nil && !errors.Is(err, http.ErrMissingFile) {
-			err = core.Wrap(err, "error parsing cover_image")
+			err = kcore.Wrap(err, "error parsing cover_image")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -248,16 +248,16 @@ func updateRaceDescriptionRoute(conn *pgxpool.Pool) http.HandlerFunc {
 func openRaceForRegistrationRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		raceId, err := core.ParseID(chi.URLParam(r, "raceId"))
+		raceId, err := kcore.ParseID(chi.URLParam(r, "raceId"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing raceId")
+			err = kcore.Wrap(err, "error parsing raceId")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		maximumParticipants, err := strconv.Atoi(r.FormValue("maximum_participants"))
 		if err != nil {
-			err = core.Wrap(err, "error parsing maximum_participants")
+			err = kcore.Wrap(err, "error parsing maximum_participants")
 			slog.Warn(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

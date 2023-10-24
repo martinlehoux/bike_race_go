@@ -2,16 +2,16 @@ package auth
 
 import (
 	"bike_race/config"
-	"bike_race/core"
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/martinlehoux/kagamigo/kauth"
+	"github.com/martinlehoux/kagamigo/kcore"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slog"
 )
@@ -36,9 +36,9 @@ func Router(conn *pgxpool.Pool, config config.Config) *chi.Mux {
 func viewUsersRoute(conn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		lc := GetLoginContext(r)
-		if !lc.LoggedIn {
-			Unauthorized(w, ErrNotAuthenticated)
+		login := LoginFromContext(ctx)
+		if !login.Ok {
+			kauth.Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
 		users, code, err := UserListQuery(ctx, conn)
@@ -46,20 +46,20 @@ func viewUsersRoute(conn *pgxpool.Pool) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		}
-		page := UsersPage(users, lc)
-		core.RenderPage(ctx, page, w)
+		page := UsersPage(login, users)
+		kcore.RenderPage(ctx, page, w)
 	}
 }
 
 func viewUserMeRoute() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		lc := GetLoginContext(r)
-		if !lc.LoggedIn {
-			Unauthorized(w, ErrNotAuthenticated)
+		login := LoginFromContext(r.Context())
+		if !login.Ok {
+			kauth.Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
-		page := MePage(lc)
-		core.RenderPage(r.Context(), page, w)
+		page := MePage(login)
+		kcore.RenderPage(r.Context(), page, w)
 	}
 }
 
@@ -83,15 +83,8 @@ func logInRoute(conn *pgxpool.Pool, config config.Config) http.HandlerFunc {
 			http.Error(w, err.Error(), code)
 			return
 		} else {
-			expiresAt := time.Now().Add(24 * time.Hour)
-			cookieValue := encrypt(config.CookieSecret, fmt.Sprintf("%s:%d", user.Id.String(), expiresAt.Unix()))
-			http.SetCookie(w, &http.Cookie{
-				Domain:  config.Domain,
-				Name:    "authentication",
-				Value:   cookieValue,
-				Expires: expiresAt,
-				Path:    "/",
-			})
+			cookie := kauth.CraftCookie(user.Id, config.Auth)
+			http.SetCookie(w, &cookie)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
@@ -100,9 +93,9 @@ func logInRoute(conn *pgxpool.Pool, config config.Config) http.HandlerFunc {
 func logOutRoute() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, ok := UserFromContext(ctx)
+		_, ok := kauth.UserFromContext[User](ctx)
 		if !ok {
-			Unauthorized(w, ErrNotAuthenticated)
+			kauth.Unauthorized(w, ErrNotAuthenticated)
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
@@ -127,14 +120,14 @@ func AuthenticateUser(ctx context.Context, conn *pgxpool.Pool, username string, 
 		slog.Warn(ErrUserNotFound.Error())
 		return User{}, http.StatusNotFound, ErrUserNotFound
 	}
-	core.Expect(err, "error querying user")
+	kcore.Expect(err, "error querying user")
 
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		slog.Warn(ErrBadPassword.Error())
 		return User{}, http.StatusBadRequest, ErrBadPassword
 	}
-	core.Expect(err, "error comparing password hash")
+	kcore.Expect(err, "error comparing password hash")
 
 	slog.Info("User authenticated", slog.String("username", username))
 	return user, http.StatusOK, nil

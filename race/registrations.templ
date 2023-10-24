@@ -1,15 +1,14 @@
 package race
 
 import "bike_race/auth"
-import "bike_race/templates"
 
-templ RegistrationsPage(lc auth.LoginContext, registrations []UserRegistrationModel) {
+templ RegistrationsPage(login auth.Login, registrations []UserRegistrationModel) {
 	<html>
-		@templates.Head()
+		@auth.Head()
 		<body>
-			@templates.Navbar(lc.LoggedIn, lc.Tr)
+			@auth.Navbar(login)
 			<main class="flex flex-col mx-4 items-center">
-				<h1 class="text-xl font-bold text-blue-900 mt-4">{ lc.Tr("userRegistrations_title") }</h1>
+				<h1 class="text-xl font-bold text-blue-900 mt-4">{ login.Tr("userRegistrations_title") }</h1>
 				<div class="flex flex-col">
 					for _, registration := range registrations {
 						<div class="flex flex-col gap-4">
@@ -22,10 +21,10 @@ templ RegistrationsPage(lc auth.LoginContext, registrations []UserRegistrationMo
  									class="flex flex-row"
 								>
 									<input type="file" name="medical_certificate" id="medical_certificate"/>
-									<input type="submit" value={ lc.Tr("uploadMedicalCertificateButton") } class="btn-primary"/>
+									<input type="submit" value={ login.Tr("uploadMedicaloginertificateButton") } class="btn-primary"/>
 								</form>
 							} else {
-								<span>{ lc.Tr("medicalCertificateUploaded") }</span>
+								<span>{ login.Tr("medicalcertificateUploaded") }</span>
 							}
 						</div>
 					}
