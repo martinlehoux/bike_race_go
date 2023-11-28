@@ -4,8 +4,8 @@ import "fmt"
 import "github.com/martinlehoux/kagamigo/kcore"
 import "bike_race/auth"
 
-func registerAction(raceId kcore.ID) string {
-	return fmt.Sprintf("/races/%s/register", raceId.String())
+func registerAction(raceId kcore.ID) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/races/%s/register", raceId.String()))
 }
 
 func raceHref(raceId kcore.ID) templ.SafeURL {

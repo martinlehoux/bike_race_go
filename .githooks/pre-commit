@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ev
 
-rm -r ./**/*_templ.go
+rm -f ./**/*_templ.go
 templ generate
 gofmt -d -e -s .
 go vet ./...

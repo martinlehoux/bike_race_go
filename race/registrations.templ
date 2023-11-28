@@ -15,7 +15,7 @@ templ RegistrationsPage(login auth.Login, registrations []UserRegistrationModel)
 							<span>{ registration.Race.Name }</span>
 							if registration.Permissions.CanUploadMedicalCertificate {
 								<form
- 									action={ raceAction(registration.Race.Id, "upload_medical_certificate" ) }
+ 									action={ raceAction(registration.Race.Id, "upload_medical_certificate") }
  									method="post"
  									enctype="multipart/form-data"
  									class="flex flex-row"

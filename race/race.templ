@@ -5,12 +5,12 @@ import "fmt"
 import "strconv"
 import "github.com/martinlehoux/kagamigo/kcore"
 
-func raceAction(raceId kcore.ID, action string) string {
-	return fmt.Sprintf("/races/%s/%s", raceId.String(), action)
+func raceAction(raceId kcore.ID, action string) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/races/%s/%s", raceId.String(), action))
 }
 
-func raceRegistrationAction(raceId kcore.ID, userId kcore.ID, action string) string {
-	return fmt.Sprintf("/races/%s/registrations/%s/%s", raceId.String(), userId.String(), action)
+func raceRegistrationAction(raceId kcore.ID, userId kcore.ID, action string) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/races/%s/registrations/%s/%s", raceId.String(), userId.String(), action))
 }
 
 func imageSrc(image string) string {
