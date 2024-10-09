@@ -1,8 +1,8 @@
 module bike_race
 
-go 1.21
+go 1.22.0
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	github.com/a-h/templ v0.2.778
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.19.0
 	go.opentelemetry.io/otel/sdk v1.19.0
 	golang.org/x/crypto v0.26.0
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 )
 
 require (
