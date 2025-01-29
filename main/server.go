@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"log/slog"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kataras/i18n"
@@ -21,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"golang.org/x/exp/slog"
 )
 
 func getTracerProvider(ctx context.Context, serviceName string) *trace.TracerProvider {
