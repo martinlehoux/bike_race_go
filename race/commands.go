@@ -7,12 +7,13 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"log/slog"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martinlehoux/kagamigo/kauth"
 	"github.com/martinlehoux/kagamigo/kcore"
 	"github.com/samber/lo"
-	"golang.org/x/exp/slog"
 )
 
 var (

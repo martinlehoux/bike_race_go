@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"log/slog"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martinlehoux/kagamigo/kauth"
 	"github.com/martinlehoux/kagamigo/kcore"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/exp/slog"
 )
 
 var (

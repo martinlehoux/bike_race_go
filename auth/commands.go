@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"log/slog"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martinlehoux/kagamigo/kcore"
-	"golang.org/x/exp/slog"
 )
 
 func RegisterUserCommand(ctx context.Context, conn *pgxpool.Pool, username string, password string) (int, error) {

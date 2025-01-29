@@ -5,12 +5,13 @@ import (
 	"errors"
 	"os"
 
+	"log/slog"
+
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/martinlehoux/kagamigo/kauth"
 	"github.com/martinlehoux/kagamigo/kcore"
-	"golang.org/x/exp/slog"
 )
 
 var (
